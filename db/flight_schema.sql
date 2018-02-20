@@ -14,18 +14,24 @@ CREATE TABLE  User  (
 );
 
 CREATE TABLE  Reservation  (
-     reservation_id     INTEGER NOT NULL UNIQUE,
-     reference  TEXT,
-     date   INTEGER,
-     creator_id     INTEGER NOT NULL,
-    FOREIGN KEY( creator_id ) REFERENCES  User ( user_id ) ON DELETE CASCADE,
-    
+	 reservation_id 	INTEGER NOT NULL UNIQUE,
+	 reference 	TEXT,
+	 date 	INTEGER,
+	 creator_id 	INTEGER NOT NULL,
+	 flight_to_id 	INTEGER NOT NULL,
+	 flight_from_id 	INTEGER NOT NULL,
+	 ticket_id 	INTEGER NOT NULL,
+	PRIMARY KEY( reservation_id ),
+	FOREIGN KEY( flight_to_id ) REFERENCES  Flight ( flight_id ) ON DELETE CASCADE,
+	FOREIGN KEY( ticket_id ) REFERENCES  Ticket ( ticket_id ) ON DELETE CASCADE,
+	FOREIGN KEY( creator_id ) REFERENCES  User ( user_id ) ON DELETE CASCADE,
+	FOREIGN KEY( flight_from_id ) REFERENCES  Flight ( flight_id ) ON DELETE CASCADE
 );
 
 CREATE TABLE  Ticket  (
 	 ticket_id 	INTEGER NOT NULL UNIQUE,
 	 fullName 	TEXT,
-	 DOB 	INTEGER,
+	 age 	INTEGER,
 	 reservation_id 	INTEGER NOT NULL,
 	 price 	INTEGER,
 	 seat 	TEXT,
