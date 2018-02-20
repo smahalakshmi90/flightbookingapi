@@ -9,3 +9,12 @@ import time, sqlite3, re, os
 DEFAULT_DB_PATH = '../db/flight.db'
 DEFAULT_SCHEMA = "../db/flight_schema.sql"
 
+conn = sqlite3.connect("flight.db")
+c = conn.cursor()
+
+
+
+
+
+conn.commit()
+conn.close()
