@@ -7,25 +7,24 @@ CREATE TABLE  User  (
      firstName  TEXT,
      phoneNumber    TEXT,
      email  TEXT,
-     birthDate  INTEGER,
+     birthDate  TEXT,
      gender     TEXT,
-     registrationDate   INTEGER,
+     registrationDate   TEXT,
     PRIMARY KEY( user_id )
 );
 
 CREATE TABLE  Reservation  (
 	 reservation_id 	INTEGER NOT NULL UNIQUE,
 	 reference 	TEXT,
-	 date 	INTEGER,
+	 re_date 	TEXT,
 	 creator_id 	INTEGER NOT NULL,
-	 flight_to_id 	INTEGER NOT NULL,
-	 flight_from_id 	INTEGER NOT NULL,
+	 flight_id 	INTEGER NOT NULL,
 	 ticket_id 	INTEGER NOT NULL,
 	PRIMARY KEY( reservation_id ),
-	FOREIGN KEY( flight_to_id ) REFERENCES  Flight ( flight_id ) ON DELETE CASCADE,
+	FOREIGN KEY( flight_id ) REFERENCES  Flight ( flight_id ) ON DELETE CASCADE,
 	FOREIGN KEY( ticket_id ) REFERENCES  Ticket ( ticket_id ) ON DELETE CASCADE,
 	FOREIGN KEY( creator_id ) REFERENCES  User ( user_id ) ON DELETE CASCADE,
-	FOREIGN KEY( flight_from_id ) REFERENCES  Flight ( flight_id ) ON DELETE CASCADE
+	
 );
 
 CREATE TABLE  Ticket  (
@@ -43,7 +42,7 @@ CREATE TABLE  Flight  (
 	 flight_id 	INTEGER NOT NULL UNIQUE,
 	 code 	TEXT UNIQUE,
 	 gate 	TEXT,
-	 depDate 	INTEGER,
+	 depDate 	TEXT,
 	 nbInitialSeats 	INTEGER,
 	 nbSeatsLeft 	INTEGER,
 	 template_id 	INTEGER NOT NULL,
@@ -53,8 +52,8 @@ CREATE TABLE  Flight  (
 
 CREATE TABLE  TemplateFlights  (
 	 tflight_id 	INTEGER NOT NULL UNIQUE,
-	 depTime 	INTEGER,
-	 arrTime 	INTEGER,
+	 depTime 	TEXT,
+	 arrTime 	TEXT,
 	 origin 	TEXT,
 	 destination 	TEXT,
 	PRIMARY KEY( tflight_id )
