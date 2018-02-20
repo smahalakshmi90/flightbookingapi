@@ -8,6 +8,7 @@ import time, sqlite3, os
 #Default paths for .db and .sql files to create and populate the database.
 DEFAULT_DB_PATH = '../db/flight.db'
 DEFAULT_SCHEMA = "../db/flight_schema.sql"
+DEFAULT_DATA_DUMP = "../db/flight_data_dump.sql"
 
 
 
@@ -21,5 +22,18 @@ def create_tables(db_path=DEFAULT_DB_PATH, schema_path=DEFAULT_SCHEMA):
 			conn.commit()
 	finally:
 		conn.close()
+		
+def populate_tables(db_path=DEFAULT_DB_PATH, data_dump=DEFAULT_DATA_DUMP):
+	conn = sqlite3.connect(db_path)
+	c = conn.cursor()
+	try:
+		with open(data_dump, encoding="utf-8") as f:
+			sql = f.read()
+			c.executescript(sql)
+			conn.commit()
+	finally:
+		conn.close()
+
 
 create_tables()
+populate_tables()
