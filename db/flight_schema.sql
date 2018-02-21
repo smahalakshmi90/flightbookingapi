@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS Reservation(
      flight_id  INTEGER NOT NULL,
     PRIMARY KEY( reservation_id ),
     FOREIGN KEY( flight_id ) REFERENCES  Flight ( flight_id ) ON DELETE CASCADE,
-    FOREIGN KEY( creator_id ) REFERENCES  Users ( user_id ) ON DELETE CASCADE);
+    FOREIGN KEY( creator_id ) REFERENCES  User ( user_id ) ON DELETE CASCADE);
 
 CREATE TABLE IF NOT EXISTS Ticket(
      ticket_id  INTEGER NOT NULL UNIQUE,
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS Flight(
      nbInitialSeats     INTEGER,
      nbSeatsLeft    INTEGER,
      template_id    INTEGER NOT NULL,
-    FOREIGN KEY( template_id ) REFERENCES  TemplateFlights ( tflight_id ) ON DELETE CASCADE,
+    FOREIGN KEY( template_id ) REFERENCES  TemplateFlight ( tflight_id ) ON DELETE CASCADE,
     PRIMARY KEY( flight_id ));
 
 CREATE TABLE IF NOT EXISTS TemplateFlight(
