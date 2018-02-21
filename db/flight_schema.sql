@@ -24,10 +24,11 @@ CREATE TABLE IF NOT EXISTS Reservation(
 
 CREATE TABLE IF NOT EXISTS Ticket(
      ticket_id  INTEGER NOT NULL UNIQUE,
-     fullName   TEXT,
+	 firstName   TEXT,
+	 lastName   TEXT,
+	 gender   TEXT,
      age    INTEGER,
      reservation_id     INTEGER NOT NULL,
-     price  INTEGER,
      seat   TEXT,
     PRIMARY KEY( ticket_id ),
     FOREIGN KEY( reservation_id ) REFERENCES  Reservation ( reservation_id ) ON DELETE CASCADE);
@@ -35,6 +36,7 @@ CREATE TABLE IF NOT EXISTS Ticket(
 CREATE TABLE IF NOT EXISTS Flight(
      flight_id  INTEGER NOT NULL UNIQUE,
      code   TEXT UNIQUE,
+	 price  INTEGER,
      gate   TEXT,
      depDate    INTEGER,
 	 arrDate    INTEGER,
