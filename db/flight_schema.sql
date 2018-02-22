@@ -12,6 +12,27 @@ CREATE TABLE IF NOT EXISTS User(
      registrationDate   INTEGER,
     PRIMARY KEY(user_id ));
 
+CREATE TABLE IF NOT EXISTS TemplateFlight(
+     tflight_id     INTEGER NOT NULL UNIQUE,
+     depTime    INTEGER,
+     arrTime    INTEGER,
+     origin     TEXT,
+     destination    TEXT,
+    PRIMARY KEY( tflight_id ));
+
+CREATE TABLE IF NOT EXISTS Flight(
+     flight_id  INTEGER NOT NULL UNIQUE,
+     code   TEXT UNIQUE,
+     price  INTEGER,
+     gate   TEXT,
+     depDate    INTEGER,
+     arrDate    INTEGER,
+     nbInitialSeats     INTEGER,
+     nbSeatsLeft    INTEGER,
+     template_id    INTEGER NOT NULL,
+    FOREIGN KEY( template_id ) REFERENCES  TemplateFlight(tflight_id ) ON DELETE CASCADE,
+    PRIMARY KEY( flight_id ));
+
 CREATE TABLE IF NOT EXISTS Reservation(
      reservation_id     INTEGER NOT NULL UNIQUE,
      reference  TEXT,
@@ -33,26 +54,8 @@ CREATE TABLE IF NOT EXISTS Ticket(
     PRIMARY KEY( ticket_id ),
     FOREIGN KEY( reservation_id ) REFERENCES  Reservation ( reservation_id ) ON DELETE CASCADE);
 
-CREATE TABLE IF NOT EXISTS Flight(
-     flight_id  INTEGER NOT NULL UNIQUE,
-     code   TEXT UNIQUE,
-	 price  INTEGER,
-     gate   TEXT,
-     depDate    INTEGER,
-	 arrDate    INTEGER,
-     nbInitialSeats     INTEGER,
-     nbSeatsLeft    INTEGER,
-     template_id    INTEGER NOT NULL,
-    FOREIGN KEY( template_id ) REFERENCES  TemplateFlight(tflight_id ) ON DELETE CASCADE,
-    PRIMARY KEY( flight_id ));
 
-CREATE TABLE IF NOT EXISTS TemplateFlight(
-     tflight_id     INTEGER NOT NULL UNIQUE,
-     depTime    INTEGER,
-     arrTime    INTEGER,
-     origin     TEXT,
-     destination    TEXT,
-    PRIMARY KEY( tflight_id ));
+
 
 COMMIT;
 PRAGMA foreign_keys=ON;

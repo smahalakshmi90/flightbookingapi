@@ -1,8 +1,11 @@
 '''
-Created on 19.02.2018
-Provides the database API to access the forum persistent data.
+Created on 20.02.2018
+Provides the database API to access the flight booking system persistent data.
+
+@author: Mahalakshmy Seetharaman
 
 '''
+
 from datetime import datetime
 import time, sqlite3, re, os, io
 #Default paths for .db and .sql files to create and populate the database.
@@ -11,6 +14,7 @@ DEFAULT_SCHEMA = "db/flight_schema.sql"
 DEFAULT_DATA_DUMP = "db/flight_data_dump.sql"
 
 class Engine(object):
+
     '''
     Abstraction of the database.
 
@@ -26,13 +30,13 @@ class Engine(object):
 
     :param db_path: The path of the database file (always with respect to the
         calling script. If not specified, the Engine will use the file located
-        at *db/forum.db*
+        at *db/flight.db*
 
     '''
+
     def __init__(self, db_path=None):
         '''
         '''
-
         super(Engine, self).__init__()
         if db_path is not None:
             self.db_path = db_path
@@ -72,9 +76,10 @@ class Engine(object):
         cur.execute(keys_on)
         with con:
             cur = con.cursor()
-            cur.execute("DELETE FROM User")
-            cur.execute("DELETE FROM TemplateFlights")
-            
+            cur.execute("DELETE FROM messages")
+            cur.execute("DELETE FROM users")
+            #NOTE since we have ON DELETE CASCADE BOTH IN Flight, Reservation and Ticket
+            #WE DO NOT HAVE TO WORRY TO CLEAR THOSE TABLES.
 
     #METHODS TO CREATE AND POPULATE A DATABASE USING DIFFERENT SCRIPTS
     def create_tables(self, schema=None):
@@ -82,7 +87,7 @@ class Engine(object):
         Create programmatically the tables from a schema file.
 
         :param schema: path to the .sql schema file. If this parmeter is
-            None, then *db/forum_schema_dump.sql* is utilized.
+            None, then *db/flight_schema.sql* is utilized.
 
         '''
         con = sqlite3.connect(self.db_path)
@@ -152,6 +157,70 @@ class Engine(object):
                 return False
         return True
 
+    def create_templateflights_table(self):
+        '''
+        Create the table ``template flights`` programmatically, without using .sql file.
+
+        Print an error message in the console if it could not be created.
+
+        :return: ``True`` if the table was successfully created or ``False``
+            otherwise.
+        '''
+        keys_on = 'PRAGMA foreign_keys = ON'
+        stmnt = 'CREATE TABLE TemplateFlight(tflight_id INTEGER NOT NULL UNIQUE PRIMARY KEY,\
+                                depTime INTEGER,\
+                                arrTime INTEGER,\
+                                origin TEXT,\
+                                destination TEXT)'
+        #Connects to the database. Gets a connection object
+        con = sqlite3.connect(self.db_path)
+        with con:
+            #Get the cursor object.
+            #It allows to execute SQL code and traverse the result set
+            cur = con.cursor()
+            try:
+                cur.execute(keys_on)
+                #execute the statement
+                cur.execute(stmnt)
+            except sqlite3.Error as excp:
+                print("Error %s:" % excp.args[0])
+        return None
+
+    def create_flight_table(self):
+        '''
+        Create the table ``Flight`` programmatically, without using .sql file.
+
+        Print an error message in the console if it could not be created.
+
+        :return: ``True`` if the table was successfully created or ``False``
+            otherwise.
+        '''
+        keys_on = 'PRAGMA foreign_keys = ON'
+        stmnt = 'CREATE TABLE Flight(flight_id INTEGER NOT NULL UNIQUE PRIMARY KEY, \
+                                code TEXT UNIQUE,\
+                                gate TEXT,\
+                                price INTEGER, \
+                                depDate INTEGER,\
+                                arrDate INTEGER,\
+                                nbInitialSeats INTEGER,\
+                                nbSeatsLeft INTEGER,\
+                                template_id INTEGER NOT NULL,\
+                                FOREIGN KEY(template_id) REFERENCES  TemplateFlight(tflight_id) ON DELETE CASCADE)'
+        #Connects to the database. Gets a connection object
+        con = sqlite3.connect(self.db_path)
+        with con:
+            #Get the cursor object.
+            #It allows to execute SQL code and traverse the result set
+            cur = con.cursor()
+            try:
+                cur.execute(keys_on)
+                #execute the statement
+                cur.execute(stmnt)
+            except sqlite3.Error as excp:
+                print("Error %s:" % excp.args[0])
+        return None
+
+
     def create_reservation_table(self):
         '''
         Create the table ``Reservation`` programmatically, without using .sql file.
@@ -187,7 +256,7 @@ class Engine(object):
 
     def create_ticket_table(self):
         '''
-        Create the table ``ticket`` programmatically, without using
+        Create the table ``Ticket`` programmatically, without using
         .sql file.
 
         Print an error message in the console if it could not be created.
@@ -221,72 +290,12 @@ class Engine(object):
                 return False
         return True
         
-    def create_flight_table(self):
-        '''
-        Create the table ``friends`` programmatically, without using .sql file.
+    
 
-        Print an error message in the console if it could not be created.
-
-        :return: ``True`` if the table was successfully created or ``False``
-            otherwise.
-        '''
-        keys_on = 'PRAGMA foreign_keys = ON'
-        stmnt = 'CREATE TABLE Flight(flight_id INTEGER NOT NULL UNIQUE PRIMARY KEY, \
-                                code TEXT UNIQUE,\
-                                gate TEXT,\
-                                price INTEGER, \
-                                depDate INTEGER,\
-                                arrDate INTEGER,\
-                                nbInitialSeats INTEGER,\
-                                nbSeatsLeft INTEGER,\
-                                template_id INTEGER NOT NULL,\
-                                FOREIGN KEY(template_id) REFERENCES  TemplateFlight(tflight_id) ON DELETE CASCADE)'
-        #Connects to the database. Gets a connection object
-        con = sqlite3.connect(self.db_path)
-        with con:
-            #Get the cursor object.
-            #It allows to execute SQL code and traverse the result set
-            cur = con.cursor()
-            try:
-                cur.execute(keys_on)
-                #execute the statement
-                cur.execute(stmnt)
-            except sqlite3.Error as excp:
-                print("Error %s:" % excp.args[0])
-        return None
-
-    def create_templateflights_table(self):
-        '''
-        Create the table ``template flights`` programmatically, without using .sql file.
-
-        Print an error message in the console if it could not be created.
-
-        :return: ``True`` if the table was successfully created or ``False``
-            otherwise.
-        '''
-        keys_on = 'PRAGMA foreign_keys = ON'
-        stmnt = 'CREATE TABLE TemplateFlight(tflight_id INTEGER NOT NULL UNIQUE PRIMARY KEY,\
-                                depTime INTEGER,\
-                                arrTime INTEGER,\
-                                origin TEXT,\
-                                destination TEXT)'
-        #Connects to the database. Gets a connection object
-        con = sqlite3.connect(self.db_path)
-        with con:
-            #Get the cursor object.
-            #It allows to execute SQL code and traverse the result set
-            cur = con.cursor()
-            try:
-                cur.execute(keys_on)
-                #execute the statement
-                cur.execute(stmnt)
-            except sqlite3.Error as excp:
-                print("Error %s:" % excp.args[0])
-        return None
-
+    
 class Connection(object):
     '''
-    API to access the Flight database.
+    API to access the Flight Booking database.
 
     The sqlite3 connection instance is accessible to all the methods of this
     class through the :py:attr:`self.con` attribute.
@@ -385,27 +394,9 @@ class Connection(object):
     #Helper for user
     def _create_user_object(self, row):
         '''
-        It takes a :py:class:`sqlite3.Row` and transform it into a dictionary.
-
-        :param row: The row obtained from the database.
-        :type row: sqlite3.Row
-        :return: a dictionary containing the following keys:
-
-            * ``user_id``: id of the user (int)
-            * ``lastName``: The lastname of the message's creator.
-            * ``body``: message's text
-            * ``timestamp``: UNIX timestamp (long integer) that specifies when
-              the message was created.
-            * ``replyto``: The id of the parent message. String with the format
-              msg-{id}. Its value can be None.
-            * ``sender``: The nickname of the message's creator.
-            * ``editor``: The nickname of the message's editor.
-
-            Note that all values in the returned dictionary are string unless
-            otherwise stated.
 
         '''
-        return {'userid': row['user_id'],
+        return {'userid': 'user-' + row['user_id'],
                 'lastname': row['lastName'],
                 'firstname': row['firstName'],
                 'phonenumber': row['phoneNumber'],
@@ -416,24 +407,6 @@ class Connection(object):
                 
     def _create_user_list_object(self, row):
         '''
-        It takes a :py:class:`sqlite3.Row` and transform it into a dictionary.
-
-        :param row: The row obtained from the database.
-        :type row: sqlite3.Row
-        :return: a dictionary containing the following keys:
-
-            * ``user_id``: id of the user (int)
-            * ``lastName``: The lastname of the message's creator.
-            * ``body``: message's text
-            * ``timestamp``: UNIX timestamp (long integer) that specifies when
-              the message was created.
-            * ``replyto``: The id of the parent message. String with the format
-              msg-{id}. Its value can be None.
-            * ``sender``: The nickname of the message's creator.
-            * ``editor``: The nickname of the message's editor.
-
-            Note that all values in the returned dictionary are string unless
-            otherwise stated.
 
         '''
         return { 'userid': row['user_id'],
@@ -443,14 +416,7 @@ class Connection(object):
 
     def _create_reservation_object(self, row):
         '''
-        Same as :py:meth:`_create_message_object`. However, the resulting
-        dictionary is targeted to build messages in a list.
-
-        :param row: The row obtained from the database.
-        :type row: sqlite3.Row
-        :return: a dictionary with the keys ``messageid``, ``title``,
-            ``timestamp`` and ``sender``.
-
+        
         '''
         reservation_id = 'res-' + str(row['reservation_id'])
         reference = row['reference']
@@ -466,14 +432,7 @@ class Connection(object):
 
     def _create_reservation_list_object(self, row):
         '''
-        Same as :py:meth:`_create_message_object`. However, the resulting
-        dictionary is targeted to build messages in a list.
-
-        :param row: The row obtained from the database.
-        :type row: sqlite3.Row
-        :return: a dictionary with the keys ``messageid``, ``title``,
-            ``timestamp`` and ``sender``.
-
+        
         '''
         reservation_id = 'res-' + str( row['reservation_id'])
         creator_id = 'bookedby'+ str( row['creator_id'])
@@ -489,41 +448,7 @@ class Connection(object):
     #Helpers for users
     def _create_flight_object(self, row):
         '''
-        It takes a database Row and transform it into a python dictionary.
-
-        :param row: The row obtained from the database.
-        :type row: sqlite3.Row
-        :return: a dictionary with the following format:
-
-            .. code-block:: javascript
-
-                {'public_profile':{'registrationdate':,'nickname':'',
-                                   'signature':'','avatar':''},
-                'restricted_profile':{'firstname':'','lastname':'','email':'',
-                                      'website':'','mobile':'','skype':'',
-                                      'age':'','residence':'','gender':'',
-                                      'picture':''}
-                }
-
-            where:
-
-            * ``registrationdate``: UNIX timestamp when the user registered in
-                                 the system (long integer)
-            * ``nickname``: nickname of the user
-            * ``signature``: text chosen by the user for signature
-            * ``avatar``: name of the image file used as avatar
-            * ``firstanme``: given name of the user
-            * ``lastname``: family name of the user
-            * ``email``: current email of the user.
-            * ``website``: url with the user's personal page. Can be None
-            * ``mobile``: string showing the user's phone number. Can be None.
-            * ``skype``: user's nickname in skype. Can be None.
-            * ``residence``: complete user's home address.
-            * ``picture``: file which contains an image of the user.
-            * ``gender``: User's gender ('male' or 'female').
-            * ``age``: integer containing the age of the user.
-
-            Note that all values are string if they are not otherwise indicated.
+        
 
         '''
         result_id ='result' + str(row['template_id'])
@@ -549,13 +474,6 @@ class Connection(object):
 
     def _create_template_flight_object(self, row):
         '''
-        Same as :py:meth:`_create_message_object`. However, the resulting
-        dictionary is targeted to build messages in a list.
-
-        :param row: The row obtained from the database.
-        :type row: sqlite3.Row
-        :return: a dictionary with the keys ``registrationdate`` and
-            ``nickname``
 
         '''
         tflight_id ='search' +str(row['tFlight_id'])
@@ -574,14 +492,7 @@ class Connection(object):
 
     def _create_ticket_object(self, row):
         '''
-        Same as :py:meth:`_create_message_object`. However, the resulting
-        dictionary is targeted to build messages in a list.
-
-        :param row: The row obtained from the database.
-        :type row: sqlite3.Row
-        :return: a dictionary with the keys ``registrationdate`` and
-            ``nickname``
-
+        
         '''
         ticket_id ='ticketnum' + str( row['ticket_id'])
         reservation_id = 'res' + str( row['reservation_id'])
@@ -598,321 +509,269 @@ class Connection(object):
 
         return ticket
 
-    # #API ITSELF
+    #API ITSELF
 
-    # #User Table API
+    #User Table API
 
-    # def get_user(self, user_id):
-    #     '''
-    #     Extracts all the information of a user.
+    def get_user(self, user_id):
+        '''
+        Extracts all the information of a user.
 
-    #     :param str nickname: The nickname of the user to search for.
-    #     :return: dictionary with the format provided in the method:
-    #         :py:meth:`_create_user_object`
+        :param str nickname: The nickname of the user to search for.
+        :return: dictionary with the format provided in the method:
+            :py:meth:`_create_user_object`
 
-    #     '''
-    #     #Create the SQL Statements
-    #       #SQL Statement for retrieving the user information for given userid
-    #     query = 'SELECT * from User WHERE user_id = ?'
+        '''
+        #Create the SQL Statements
+          #SQL Statement for retrieving the user information for given userid
+        query = 'SELECT * from User WHERE user_id = ?'
     
-    #     #Activate foreign key support
-    #     self.set_foreign_keys_support()
-    #     #Cursor and row initialization
-    #     self.con.row_factory = sqlite3.Row
-    #     cur = self.con.cursor()
-    #     # Execute the SQL Statement to retrieve the user information.
-    #     # Create first the valuse
-    #     pvalue = (user_id, )
-    #     #execute the statement
-    #     cur.execute(query, pvalue)
-    #     #Process the response. Only one posible row is expected.
-    #     row = cur.fetchone()
-    #     return self._create_user_object(row)
+        #Activate foreign key support
+        self.set_foreign_keys_support()
+        #Cursor and row initialization
+        self.con.row_factory = sqlite3.Row
+        cur = self.con.cursor()
+        # Execute the SQL Statement to retrieve the user information.
+        # Create first the valuse
+        pvalue = (user_id, )
+        #execute the statement
+        cur.execute(query, pvalue)
+        #Process the response. Only one posible row is expected.
+        row = cur.fetchone()
+        return self._create_user_object(row)
 
-    # def get_users(self):
-    #     '''
-    #     Extracts all users in the database.
+    def get_users(self):
+        '''
+        '''
+        #Create the SQL Statements
+          #SQL Statement for retrieving the users
+        query = 'SELECT * FROM User'
+        #Activate foreign key support
+        self.set_foreign_keys_support()
+        #Create the cursor
+        self.con.row_factory = sqlite3.Row
+        cur = self.con.cursor()
+        #Execute main SQL Statement
+        cur.execute(query)
+        #Process the results
+        rows = cur.fetchall()
+        if rows is None:
+            return None
+        #Process the response.
+        users = []
+        for row in rows:
+            users.append(self._create_user_list_object(row))
+        return users
 
-    #     :return: list of Users of the database. Each user is a dictionary
-    #         that contains two keys: ``nickname``(str) and ``registrationdate``
-    #         (long representing UNIX timestamp). None is returned if the database
-    #         has no users.
-
-    #     '''
-    #     #Create the SQL Statements
-    #       #SQL Statement for retrieving the users
-    #     query = 'SELECT * FROM User'
-    #     #Activate foreign key support
-    #     self.set_foreign_keys_support()
-    #     #Create the cursor
-    #     self.con.row_factory = sqlite3.Row
-    #     cur = self.con.cursor()
-    #     #Execute main SQL Statement
-    #     cur.execute(query)
-    #     #Process the results
-    #     rows = cur.fetchall()
-    #     if rows is None:
-    #         return None
-    #     #Process the response.
-    #     users = []
-    #     for row in rows:
-    #         users.append(self._create_user_list_object(row))
-    #     return users
-
-    # def create_user(self, user):
-    #     '''
-    #     Create a new user in the database.
-
-    #     :param str nickname: The nickname of the user to modify
-    #     :param dict user: a dictionary with the information to be modified. The
-    #             dictionary has the following structure:
-
-    #             .. code-block:: javascript
-
-    #                 {'public_profile':{'registrationdate':,'signature':'',
-    #                                    'avatar':''},
-    #                 'restricted_profile':{'firstname':'','lastname':'',
-    #                                       'email':'', 'website':'','mobile':'',
-    #                                       'skype':'','age':'','residence':'',
-    #                                       'gender':'', 'picture':''}
-    #                 }
-
-    #             where:
-
-    #             * ``registrationdate``: UNIX timestamp when the user registered
-    #                 in the system (long integer)
-    #             * ``signature``: text chosen by the user for signature
-    #             * ``avatar``: name of the image file used as avatar
-    #             * ``firstanme``: given name of the user
-    #             * ``lastname``: family name of the user
-    #             * ``email``: current email of the user.
-    #             * ``website``: url with the user's personal page. Can be None
-    #             * ``mobile``: string showing the user's phone number. Can be
-    #                 None.
-    #             * ``skype``: user's nickname in skype. Can be None.
-    #             * ``residence``: complete user's home address.
-    #             * ``picture``: file which contains an image of the user.
-    #             * ``gender``: User's gender ('male' or 'female').
-    #             * ``age``: integer containing the age of the user.
-
-    #         Note that all values are string if they are not otherwise indicated.
-
-    #     :return: the nickname of the modified user or None if the
-    #         ``nickname`` passed as parameter is not  in the database.
-    #     :raise ValueError: if the user argument is not well formed.
-
-    #     '''
+    def create_user(self, user):
+        '''
+        Create a new user in the database.
+        '''
         
-    #       #SQL Statement to create the row in  users table
-    #     query = 'INSERT INTO User (lastName, firstName, phoneNumber, email, birthDate, gender, registrationDate)\
-    #               VALUES(?,?,?,?,?,?,?)'
+          #SQL Statement to create the row in  users table
+        query = 'INSERT INTO User (lastName, firstName, phoneNumber, email, birthDate, gender, registrationDate)\
+                  VALUES(?,?,?,?,?,?,?)'
                   
-    #     #temporal variables for user table
-    #     #timestamp will be used for lastlogin and regDate.
-    #     timestamp = time.mktime(datetime.now().timetuple()
-    #     #Activate foreign key support
-    #     self.set_foreign_keys_support()
-    #     #Cursor and row initialization
-    #     self.con.row_factory = sqlite3.Row
-    #     cur = self.con.cursor()
-    #     #Execute the statement to extract the id associated to a nickname
-    #     pvalue = (lastName, firstName)
-    #     cur.execute(query, pvalue)
-    #     #No value expected (no other user with that nickname expected)
-    #     row = cur.fetchone()r
-    #     #If there is no user add rows in user and user profile
-    #     if row is None:
-    #         #Add the row in users table
-    #         # Execute the statement
-    #         pvalue = (nickname, timestamp, timestamp, timesviewed)
-    #         cur.execute(query2, pvalue)
-    #         #Extrat the rowid => user-id
-    #         lid = cur.lastrowid
-    #         #Add the row in users_profile table
-    #         # Execute the statement
-    #         pvalue = (lid, _firstname, _lastname, _email, _website,
-    #                   _picture, _mobile, _skype, _age, _residence, _gender,
-    #                   _signature, _avatar)
-    #         cur.execute(query3, pvalue)
-    #         self.con.commit()
-    #         #We do not do any comprobation and return the nickname
-    #         return nickname
-    #     else:
-    #         return None
+        #temporal variables for user table
+        #timestamp will be used for lastlogin and regDate.
+        timestamp = time.mktime(datetime.now().timetuple()
+        #Activate foreign key support
+        self.set_foreign_keys_support()
+        #Cursor and row initialization
+        self.con.row_factory = sqlite3.Row
+        cur = self.con.cursor()
+        #Execute the statement to extract the id associated to a nickname
+        pvalue = (lastName, firstName, phoneNumber, email, birthDate, gender, registrationDate)
+        cur.execute(query, pvalue) 
+        #No value expected (no other user with that nickname expected)
+        row = cur.fetchone()
+        #If there is no user add rows in user and user profile
+        if row is None:
+            #Add the row in users table
+            # Execute the statement
+            pvalue = (nickname, timestamp, timestamp, timesviewed)
+            cur.execute(query2, pvalue)
+            #Extrat the rowid => user-id
+            lid = cur.lastrowid
+            #Add the row in users_profile table
+            # Execute the statement
+            pvalue = (lid, _firstname, _lastname, _email, _website,
+                      _picture, _mobile, _skype, _age, _residence, _gender,
+                      _signature, _avatar)
+            cur.execute(query3, pvalue)
+            self.con.commit()
+            #We do not do any comprobation and return the nickname
+            return nickname
+        else:
+            return None
 
-    # def modify_user(self, user_id, user):
-    #     '''
-    #     Modify the information of a user.
-
-    #     :param str nickname: The nickname of the user to modify
-    #     :param dict user: a dictionary with the information to be modified. The
-    #             dictionary has the following structure:
-
-    #             .. code-block:: javascript
-
-    #                 {'public_profile':{'registrationdate':,'signature':'',
-    #                                    'avatar':''},
-    #                 'restricted_profile':{'firstname':'','lastname':'',
-    #                                       'email':'', 'website':'','mobile':'',
-    #                                       'skype':'','age':'','residence':'',
-    #                                       'gender':'', 'picture':''}
-    #                 }
-
-    #             where:
-
-    #             * ``registrationdate``: UNIX timestamp when the user registered
-    #                 in the system (long integer)
-    #             * ``signature``: text chosen by the user for signature
-    #             * ``avatar``: name of the image file used as avatar
-    #             * ``firstanme``: given name of the user
-    #             * ``lastname``: family name of the user
-    #             * ``email``: current email of the user.
-    #             * ``website``: url with the user's personal page. Can be None
-    #             * ``mobile``: string showing the user's phone number. Can be
-    #                 None.
-    #             * ``skype``: user's nickname in skype. Can be None.
-    #             * ``residence``: complete user's home address.
-    #             * ``picture``: file which contains an image of the user.
-    #             * ``gender``: User's gender ('male' or 'female').
-    #             * ``age``: integer containing the age of the user.
-
-    #         Note that all values are string if they are not otherwise indicated.
-
-    #     :return: the nickname of the modified user or None if the
-    #         ``nickname`` passed as parameter is not  in the database.
-    #     :raise ValueError: if the user argument is not well formed.
-
-    #     '''
-    #             #Create the SQL Statements
-    #        #SQL Statement for extracting the userid given a nickname
+    def modify_user(self, user_id, user):
+        '''
+        
+        '''
+                #Create the SQL Statements
+           #SQL Statement for extracting the userid given a nickname
            
-    #     query = 'UPDATE User SET lastName = ?,firstName = ?, \
-    #                                        phoneNumber = ?,email = ?, \
-    #                                        birthDate = ?,gender = ?\
-    #                                        WHERE user_id = ?'
-    #     #temporal variables
-    #     firstname = User.get('firstName', None)
-    #     lastname = User.get('lastName', None)
-    #     phonenumber = User.get('phoneNumber', None)
-    #     email = User.get('email', None)
-    #     birthdate = User.get('birthDate', None)
-    #     gender = User.get('gender', None)
+        query = 'UPDATE User SET lastName = ?,firstName = ?, \
+                                           phoneNumber = ?,email = ?, \
+                                           birthDate = ?,gender = ?\
+                                           WHERE user_id = ?'
+        #temporal variables
+        firstname = User.get('firstName', None)
+        lastname = User.get('lastName', None)
+        phonenumber = User.get('phoneNumber', None)
+        email = User.get('email', None)
+        birthdate = User.get('birthDate', None)
+        gender = User.get('gender', None)
 
-    #     #Activate foreign key support
-    #     self.set_foreign_keys_support()
-    #     #Cursor and row initialization
-    #     self.con.row_factory = sqlite3.Row
-    #     cur = self.con.cursor()
-    #     #Execute the statement to extract the id associated to a nickname
-    #     pvalue = (nickname,)
-    #     cur.execute(query1, pvalue)
-    #     #Only one value expected
-    #     row = cur.fetchone()
-    #     #if does not exist, return
-    #     if row is None:
-    #         return None
-    #     else:
-    #         user_id = row["user_id"]
-    #         #execute the main statement
-    #         pvalue = (lastname, firstname, phonenumber, email, birthdare, gender)
-    #         cur.execute(query, pvalue)
-    #         self.con.commit()
-    #         #Check that I have modified the user
-    #         if cur.rowcount < 1:
-    #             return None
-    #         return user_id
+        #Activate foreign key support
+        self.set_foreign_keys_support()
+        #Cursor and row initialization
+        self.con.row_factory = sqlite3.Row
+        cur = self.con.cursor()
+        #Execute the statement to extract the id associated to a nickname
+        pvalue = (nickname,)
+        cur.execute(query1, pvalue)
+        #Only one value expected
+        row = cur.fetchone()
+        #if does not exist, return
+        if row is None:
+            return None
+        else:
+            user_id = row["user_id"]
+            #execute the main statement
+            pvalue = (lastname, firstname, phonenumber, email, birthdare, gender)
+            cur.execute(query, pvalue)
+            self.con.commit()
+            #Check that I have modified the user
+            if cur.rowcount < 1:
+                return None
+            return user_id
 
-    # def delete_user(self, user_id):
-    #     '''
-    #     Remove all user information of the user with the nickname passed in as
-    #     argument.
+    def delete_user(self, user_id):
+        '''
+        
+        '''
+        #Create the SQL Statements
+          #SQL Statement for deleting the user information
+        query = 'DELETE FROM users WHERE user_id = ?'
+        #Activate foreign key support
+        self.set_foreign_keys_support()
+        #Cursor and row initialization
+        self.con.row_factory = sqlite3.Row
+        cur = self.con.cursor()
+        #Execute the statement to delete
+        pvalue = (user_id,)
+        cur.execute(query, pvalue)
+        self.con.commit()
+        #Check that it has been deleted
+        if cur.rowcount < 1:
+            return False
+        return True
 
-    #     :param str nickname: The nickname of the user to remove.
+    def get_reservation(self, res_id):
+        '''
+        '''
+        query = 'SELECT * FROM Reservation WHERE res_id = ?'
+        self.set_foreign_keys_support()
+        self.con.row_factory = sqlite3.Row
+        cur = self.con.cursor()
+        pvalue = (res_id,)
+        cur.execute(query, pvalue)
+        self.con.commit()
+        row = cur.fetchone()
+        return self._create_reservation_object(row)
 
-    #     :return: True if the user is deleted, False otherwise.
+    def get_reservation_list(self):
+        '''
+        '''
+        query = 'SELECT * FROM Reservation'
+        self.set_foreign_keys_support()
+        self.con.row_factory = sqlite3.Row
+        cur = self.con.cursor()
+        cur.execute(query)
+        rows = cur.fetchall()
+        if rows is None:
+            return None
+        reservations = []
+        for row in rows:
+            reservations.append(_create_reservation_list_object(row))
+        return reservations
 
-    #     '''
-    #     #Create the SQL Statements
-    #       #SQL Statement for deleting the user information
-    #     query = 'DELETE FROM users WHERE user_id = ?'
-    #     #Activate foreign key support
-    #     self.set_foreign_keys_support()
-    #     #Cursor and row initialization
-    #     self.con.row_factory = sqlite3.Row
-    #     cur = self.con.cursor()
-    #     #Execute the statement to delete
-    #     pvalue = (user_id,)
-    #     cur.execute(query, pvalue)
-    #     self.con.commit()
-    #     #Check that it has been deleted
-    #     if cur.rowcount < 1:
-    #         return False
-    #     return True
+    def get_reservations_by_user(self, creator_id):
+        '''
+        '''
+        query = 'SELECT * FROM Reservation WHERE creator_id = ?'
+        self.set_foreign_keys_support()
+        self.con.row_factory = sqlite3.Row
+        cur = self.con.cursor()
+        pvalue = (creator_id,)
+        cur.execute(query, pvalue)
+        self.con.commit()
+        rows = cur.fetchall()
+        if rows is None:
+            return None
+        reservations_user = []
+        for row in rows:
+            reservations_user.append(_create_reservation_list_object(row))
+        return reservations_user
 
-    # def get_reservation(self, res_id):
-    #     '''
-    #     '''
-    #     query = 'SELECT * FROM Reservation WHERE res_id = ?'
-    #     self.set_foreign_keys_support()
-    #     self.con.row_factory = sqlite3.Row
-    #     cur = self.con.cursor()
-    #     pvalue = (res_id,)
-    #     cur.execute(query, pvalue)
-    #     self.con.commit()
-    #     row = cur.fetchone()
-    #     return self._create_reservation_object(row)
+    def get_reservations_by_flight(self, flight_id):
+        '''
+        '''
+        query = 'SELECT * FROM Reservation WHERE flight_id = ?'
+        self.set_foreign_keys_support()
+        self.con.row_factory = sqlite3.Row
+        cur = self.con.cursor()
+        pvalue = (creator_id,)
+        cur.execute(query, pvalue)
+        self.con.commit()
+        rows = cur.fetchall()
+        if rows is None:
+            return None
+        reservations_user = []
+        for row in rows:
+            reservations_user.append(_create_reservation_list_object(row))
+        return reservations_user
 
-    # def get_reservation_list(self):
-    #     '''
-    #     '''
-    #     query = 'SELECT * FROM Reservation'
-    #     self.set_foreign_keys_support()
-    #     self.con.row_factory = sqlite3.Row
-    #     cur = self.con.cursor()
-    #     cur.execute(query)
-    #     rows = cur.fetchall()
-    #     if rows is None:
-    #         return None
-    #     reservations = []
-    #     for row in rows:
-    #         reservations.append(_create_reservation_list_object(row))
-    #     return reservations
+    def create_reservation(self):
 
-    # def get_reservations_by_user(self, creator_id):
-    #     '''
-    #     '''
-    #     query = 'SELECT * FROM Reservation WHERE creator_id = ?'
-    #     self.set_foreign_keys_support()
-    #     self.con.row_factory = sqlite3.Row
-    #     cur = self.con.cursor()
-    #     pvalue = (creator_id,)
-    #     cur.execute(query, pvalue)
-    #     self.con.commit()
-    #     rows = cur.fetchall()
-    #     if rows is None:
-    #         return None
-    #     reservations_user = []
-    #     for row in rows:
-    #         reservations_user.append(_create_reservation_list_object(row))
-    #     return reservations_user
+    def modify_reservation(self):
 
-    # def get_reservations_by_user(self, flight_id):
-    #     '''
-    #     '''
-    #     query = 'SELECT * FROM Reservation WHERE flight_id = ?'
-    #     self.set_foreign_keys_support()
-    #     self.con.row_factory = sqlite3.Row
-    #     cur = self.con.cursor()
-    #     pvalue = (creator_id,)
-    #     cur.execute(query, pvalue)
-    #     self.con.commit()
-    #     rows = cur.fetchall()
-    #     if rows is None:
-    #         return None
-    #     reservations_user = []
-    #     for row in rows:
-    #         reservations_user.append(_create_reservation_list_object(row))
-    #     return reservations_user
+    def delete_reservation(self):
+
+    def get_ticket(self, ticket_id):
+
+    def get_tickets(self):
+
+    def get_tickets_by_reservation(self, reservation_id):
+
+    def create_ticket(self):
+
+    def modify_ticket(self, ticket_id):
+
+    def delete_ticket(self, ticket_id):
+
+    def get_flight(self, flight_id):
+
+    def get_flights_by_template(self, temmplate_id):
+
+    def create_flight(self):
+
+    def modify_flight(self, flight_id):
+
+    def delete_flight(self, flight_id):
+
+    def get_template_flight(self, flight_id):
+
+    def create_template_flight(self):
+
+    def modify_template_flight(self, tflight_id):
+
+    def delete_template_flight(self, tflight_id):
+
+
+
 
 
 
