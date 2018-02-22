@@ -76,8 +76,8 @@ class Engine(object):
         cur.execute(keys_on)
         with con:
             cur = con.cursor()
-            cur.execute("DELETE FROM messages")
-            cur.execute("DELETE FROM users")
+            cur.execute("DELETE FROM User")
+            cur.execute("DELETE FROM TemplateFlight")
             #NOTE since we have ON DELETE CASCADE BOTH IN Flight, Reservation and Ticket
             #WE DO NOT HAVE TO WORRY TO CLEAR THOSE TABLES.
 
