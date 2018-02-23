@@ -1,9 +1,14 @@
 '''
 Created on 20.02.2018
+
 Provides the database API to access the flight booking system persistent data.
 
 @author: Mahalakshmy Seetharaman
 
+'''
+
+'''
+This code has been wriiten based on forum - exercise 1 
 '''
 
 from datetime import datetime
@@ -91,6 +96,7 @@ class Engine(object):
 
         '''
         con = sqlite3.connect(self.db_path)
+        #Database created from schema
         if schema is None:
             schema = DEFAULT_SCHEMA
         try:
@@ -111,10 +117,10 @@ class Engine(object):
         '''
         keys_on = 'PRAGMA foreign_keys = ON'
         con = sqlite3.connect(self.db_path)
-        #Activate foreing keys support
+        #Activate foreign keys support
         cur = con.cursor()
         cur.execute(keys_on)
-        #Populate database from dump
+        #Populate database from data dump
         if dump is None:
             dump = DEFAULT_DATA_DUMP
         with io.open (dump, encoding="utf-8") as f:
@@ -143,6 +149,7 @@ class Engine(object):
                     gender TEXT, \
                     registrationDate INTEGER, \
                     UNIQUE(user_id))'
+        #Connects to the database. Gets a connection object
         con = sqlite3.connect(self.db_path)
         with con:
             #Get the cursor object.
@@ -159,7 +166,7 @@ class Engine(object):
 
     def create_templateflights_table(self):
         '''
-        Create the table ``template flights`` programmatically, without using .sql file.
+        Create the table ``TemplateFlight`` programmatically, without using .sql file.
 
         Print an error message in the console if it could not be created.
 
@@ -184,7 +191,8 @@ class Engine(object):
                 cur.execute(stmnt)
             except sqlite3.Error as excp:
                 print("Error %s:" % excp.args[0])
-        return None
+                return False
+        return True
 
     def create_flight_table(self):
         '''
@@ -218,7 +226,8 @@ class Engine(object):
                 cur.execute(stmnt)
             except sqlite3.Error as excp:
                 print("Error %s:" % excp.args[0])
-        return None
+                return False
+        return True
 
 
     def create_reservation_table(self):
@@ -290,9 +299,7 @@ class Engine(object):
                 return False
         return True
         
-    
-
-    
+        
 class Connection(object):
     '''
     API to access the Flight Booking database.
@@ -391,32 +398,92 @@ class Connection(object):
     #Here the helpers that transform database rows into dictionary. They work
     #similarly to ORM
 
-    #Helper for user
+    #Helper for User
     def _create_user_object(self, row):
         '''
+        It takes a :py:class:`sqlite3.Row` and transform it into a dictionary.
+        The resulting dictionary is targeted to build a user
+
+        :param row: The row obtained from the database.
+        :type row: sqlite3.Row
+        :return: a dictionary containing the following keys:
+
+            * ``userid``: user id for an user (INT)
+            * ``lastname``: lastname of the user (TEXT)
+            * ``firstname``: firstname of the user (TEXT)
+            * ``phonenumber``: user's phone number (INT)
+            * ``email``: user's email address (TEXT)
+            * ``dateofBirth``: date of birth of the user (INT)
+            * ``gender``: user's gender (TEXT)
+            * ``registrationDate``: date of user registration (INT)
+
+            Note that all values in the returned dictionary are string unless
+            otherwise stated.
 
         '''
-        return {'userid': 'user-' + row['user_id'],
-                'lastname': row['lastName'],
-                'firstname': row['firstName'],
-                'phonenumber': row['phoneNumber'],
-                'email': row['email'],
-                'dateofBirth': ['birthDate'],
-                'gender': row['gender'],
-                'registrationdate': row['regDate']}
-                
+        userid = 'user-' + str(row['user_id']) 
+        lastname =row['lastName']
+        firstname = row['firstName']
+        phonenumber = row['phoneNumber'] 
+        email = row['email'] 
+        dateofBirth = ['birthDate'] 
+        gender = row['gender'] 
+        registrationDate = row['registrationDate']
+
+        user = {'userid': userid,
+                'lastname': lastname,
+                'firstname': firstname,
+                'phonenumber': phonenumber,
+                'email': email,
+                'dateofBirth': dateofBirth,
+                'gender': gender,
+                'registrationDate': registrationDate}
+
+        return user
+               
     def _create_user_list_object(self, row):
         '''
+        It takes a database Row and transform it into a python dictionary.
+        The resulting dictionary is targeted to build a users in a list.
+
+        :param row: The row obtained from the database.
+        :type row: sqlite3.Row
+        :return: a dictionary containing the following keys:
+
+            * ``userid``: user id for an user (INT)
+            * ``lastname``: lastname of the user (TEXT)
+            * ``firstname``: firstname of the user (TEXT)
+            * ``registrationDate``: date of user registration (INT)
+            
+
+            Note that all values in the returned dictionary are string unless
+            otherwise stated.
 
         '''
-        return { 'userid': row['user_id'],
+        return { 'userid': 'user-' + str(row['user_id']),
                 'firstname': row['firstName'],
-                'lastname': row['lastnName'],
-                'registrationdate': row['regDate']}
+                'lastname': row['lastName'],
+                'registrationdate': row['registrationDate']}
 
+    #Helper for Reservation
     def _create_reservation_object(self, row):
         '''
-        
+        It takes a database Row and transform it into a python dictionary.
+        The resulting dictionary is targeted to build a reservation.
+
+        :param row: The row obtained from the database.
+        :type row: sqlite3.Row
+        :return: a dictionary containing the following keys:
+
+            * ``reservationid``: reservation id for a reservation (INT)
+            * ``reference``: reference for a reservation (TEXT)
+            * ``reservationdate``: date of reservation (INT)
+            * ``userid``: id of the user making a reservation (INT)
+            * ``flightid``: flightid for which reservation is made (INT)
+            
+
+            Note that all values in the returned dictionary are string unless
+            otherwise stated.     
         '''
         reservation_id = 'res-' + str(row['reservation_id'])
         reference = row['reference']
@@ -430,26 +497,28 @@ class Connection(object):
                        'flightid': flight_id}
         return reservation
 
-    def _create_reservation_list_object(self, row):
-        '''
-        
-        '''
-        reservation_id = 'res-' + str( row['reservation_id'])
-        creator_id = 'bookedby'+ str( row['creator_id'])
-        flight_id =row['flight_id']
-        reservation_date = row['re_date']
-        reservations = {'reservationid': reservation_id,
-                       'userid' : creator_id,
-                       'flightid': flight_id,
-                       'reservationdate' : reservation_date}
-
-        return reservations
-
-    #Helpers for users
+    #Helper for Flight
     def _create_flight_object(self, row):
         '''
-        
+        It takes a database Row and transform it into a python dictionary.
+        The resulting dictionary is targeted to build a flight.
 
+        :param row: The row obtained from the database.
+        :type row: sqlite3.Row
+        :return: a dictionary containing the following keys:
+
+            * ``searchresultid``: id of entered travel details (INT)
+            * ``flightid``: id of a flight (INT)
+            * ``code``: reference for a reservation (TEXT)
+            * ``price``: date of reservation (INT)
+            * ``departuredate``: flight departure date (INT)
+            * ``arrivaldate``: flight arrival date (INT)
+            * ``gate``: gate number (TEXT)
+            * ``totalseats``: total number of seats in the flight(INT)
+            * ``seatsleft``: number seats vacant (INT)
+            
+            Note that all values in the returned dictionary are string unless
+            otherwise stated.
         '''
         result_id ='result' + str(row['template_id'])
         flight_id = 'fl-' + str(row['flight_id'])
@@ -472,38 +541,76 @@ class Connection(object):
                   'seatsleft':seats_left}
         return flight
 
+    #Helper for Template Flight
     def _create_template_flight_object(self, row):
+
         '''
+        It takes a database Row and transform it into a python dictionary.
+        The resulting dictionary is targeted to build a template flight.
+
+        :param row: The row obtained from the database.
+        :type row: sqlite3.Row
+        :return: a dictionary containing the following keys:
+
+            * ``searchid``: id of entered travel details (INT)
+            * ``origin`: travel from (TEXT)
+            * ``destination``: travel to (TEXT)
+            * ``departuretime``: intended departure time (INT)
+            * ``arrivaltime``: intended arrival time (INT)
+            
+            Note that all values in the returned dictionary are string unless
+            otherwise stated.
 
         '''
         tflight_id ='search' +str(row['tFlight_id'])
         origin = row['origin']
-        departure = row['departure']
+        destination = row['destination']
         dep_time = row['deptime']
         arr_time=row['arrTime']
         
 
         templateflight = {'searchid': tflight_id,
                           'origin': origin,
-                          'departure': departure,
+                          'destination': destination,
                           'departuretime': dep_time,
                           'arrivaltime': arr_time }
         return templateflight
 
+    #Helper for Ticket
     def _create_ticket_object(self, row):
         '''
-        
+        It takes a :py:class:`sqlite3.Row` and transform it into a dictionary.
+        The resulting dictionary is targeted to build a ticket.
+
+        :param row: The row obtained from the database.
+        :type row: sqlite3.Row
+        :return: a dictionary containing the following keys:
+
+            * ``ticketnumber``: user id for an user (INT)
+            * ``reservationid``: reservation id of a reservation (INT)
+            * ``lastname``: lastname of the passenger (TEXT)
+            * ``firstname``: firstname of the passenger (TEXT)
+            * ``gender``: passenger's gender (TEXT)
+            * ``age``: passenger's age(INT)
+            * ``seat``: seatnumber (INT)
+            
+            Note that all values in the returned dictionary are string unless
+            otherwise stated.
         '''
-        ticket_id ='ticketnum' + str( row['ticket_id'])
+        ticket_id ='ticketnum-' + str( row['ticket_id'])
         reservation_id = 'res' + str( row['reservation_id'])
-        fullname = row['origin']
+        firstname = row['firstName']
+        lastname =row['lastName']
+        gender = row['gender']
         age = row['age']
         seat = row['seat']
         
 
         ticket = {'ticketnumber': ticket_id,
                   'reservationid': reservation_id,
-                  'passengername': fullname,
+                  'firstname': firstname,
+                  'lastname': lastname,
+                  'gender': gender,
                   'age':age,
                   'seat':seat}
 
@@ -512,18 +619,17 @@ class Connection(object):
     #API ITSELF
 
     #User Table API
-
     def get_user(self, user_id):
         '''
-        Extracts all the information of a user.
+        Extracts all the information of a user from the database.
 
-        :param str nickname: The nickname of the user to search for.
+        :param str user_id: The userid of the user to search for.
         :return: dictionary with the format provided in the method:
             :py:meth:`_create_user_object`
 
         '''
-        #Create the SQL Statements
-          #SQL Statement for retrieving the user information for given userid
+        
+        #SQL Statement for retrieving the user information for given userid
         query = 'SELECT * from User WHERE user_id = ?'
     
         #Activate foreign key support
@@ -538,13 +644,20 @@ class Connection(object):
         cur.execute(query, pvalue)
         #Process the response. Only one posible row is expected.
         row = cur.fetchone()
-        return self._create_user_object(row)
+        if row is None:
+            return False 
+        else:
+            return self._create_user_object(row)
+    
 
     def get_users(self):
         '''
+        Extracts all users in the database.
+
+        :return: list of Users of the database. 
+        None is returned if the database has no users.
         '''
-        #Create the SQL Statements
-          #SQL Statement for retrieving the users
+        #Create the SQL Statement for retrieving the users
         query = 'SELECT * FROM User'
         #Activate foreign key support
         self.set_foreign_keys_support()
@@ -566,95 +679,167 @@ class Connection(object):
     def create_user(self, user):
         '''
         Create a new user in the database.
+
+        :param dict user: a dictionary for user with the information to be created. The
+                dictionary has the following structure:
+
+                .. code-block:: javascript
+
+                    user = {'lastname': lastname,
+                            'firstname': firstname,
+                            'phonenumber': phonenumber,
+                            'email': email,
+                            'dateofBirth': dateofBirth,
+                            'gender': gender,
+                            'registrationDate': registrationDate}
+                    
+
+                where:
+
+                
+                    * ``userid``: user id for an user (INT)
+                    * ``lastname``: lastname of the user (TEXT)
+                    * ``firstname``: firstname of the user (TEXT)
+                    * ``phonenumber``: user's phone number (INT)
+                    * ``email``: user's email address (TEXT)
+                    * ``dateofBirth``: date of birth of the user (INT)
+                    * ``gender``: user's gender (TEXT)
+                    * ``registrationDate``: date of user registration (INT)
+
+        Note that all values are string if they are not otherwise indicated.
+
+        :return: True when user is created 
+        :raise ValueError: if the user argument is not well formed.
         '''
         
-          #SQL Statement to create the row in  users table
-        query = 'INSERT INTO User (lastName, firstName, phoneNumber, email, birthDate, gender, registrationDate)\
+        #SQL Statement to create the row in  users table
+        #SQL Statement to check if the user already exists using email
+        query1 = 'SELECT * from User WHERE email = ?'
+        #SQL Statement to add values to new row
+        query2 = 'INSERT INTO User (lastName, firstName, phoneNumber, email, birthDate, gender, registrationDate)\
                   VALUES(?,?,?,?,?,?,?)'
                   
         #temporal variables for user table
         #timestamp will be used for lastlogin and regDate.
-        timestamp = time.mktime(datetime.now().timetuple()
+        timestamp = time.mktime(datetime.now().timetuple())
+        lastName = user.get('lastname', None)
+        firstName = user.get('firstname', None)
+        phoneNumber = user.get('phonenumber', None)
+        email = user.get('email', None)
+        birthDate = user.get('dateofBirth', None)
+        gender = user.get('gender', None)
+        registrationDate = user.get('registrationDate', None)
+
+
         #Activate foreign key support
         self.set_foreign_keys_support()
         #Cursor and row initialization
         self.con.row_factory = sqlite3.Row
         cur = self.con.cursor()
-        #Execute the statement to extract the id associated to a nickname
-        pvalue = (lastName, firstName, phoneNumber, email, birthDate, gender, registrationDate)
-        cur.execute(query, pvalue) 
-        #No value expected (no other user with that nickname expected)
+        
+        #Execute the statement to check whether the a user with same email exists
+        pvalue =(email,)
+        cur.execute(query1, pvalue) 
+          
+        #No value expected (no other user with that email expected)
         row = cur.fetchone()
-        #If there is no user add rows in user and user profile
+        #If there is no user add rows in User
         if row is None:
-            #Add the row in users table
+            #Add the row in User table
             # Execute the statement
-            pvalue = (nickname, timestamp, timestamp, timesviewed)
+            pvalue = (lastName, firstName, phoneNumber, email, birthDate, gender, timestamp)
             cur.execute(query2, pvalue)
-            #Extrat the rowid => user-id
-            lid = cur.lastrowid
-            #Add the row in users_profile table
-            # Execute the statement
-            pvalue = (lid, _firstname, _lastname, _email, _website,
-                      _picture, _mobile, _skype, _age, _residence, _gender,
-                      _signature, _avatar)
-            cur.execute(query3, pvalue)
             self.con.commit()
-            #We do not do any comprobation and return the nickname
-            return nickname
+            return True
         else:
             return None
 
     def modify_user(self, user_id, user):
         '''
-        
+        Modify the information of a user.
+
+        :param user_id: The user_id of the user to modify
+        :param dict user: a dictionary for user with the information to be created. The
+                dictionary has the following structure:
+
+                .. code-block:: javascript
+
+                    user = {'lastname': lastname,
+                            'firstname': firstname,
+                            'phonenumber': phonenumber,
+                            'email': email,
+                            'dateofBirth': dateofBirth,
+                            'gender': gender,
+                            'registrationDate': registrationDate}
+                    
+                where:
+                
+                    * ``userid``: user id for an user (INT)
+                    * ``lastname``: lastname of the user (TEXT)
+                    * ``firstname``: firstname of the user (TEXT)
+                    * ``phonenumber``: user's phone number (INT)
+                    * ``email``: user's email address (TEXT)
+                    * ``dateofBirth``: date of birth of the user (INT)
+                    * ``gender``: user's gender (TEXT)
+                    * ``registrationDate``: date of user registration (INT)
+
+        Note that all values are string if they are not otherwise indicated.
+
+        :return: True when user is modified or False is the user_id does not exist
+        :raise ValueError: if the user argument is not well formed.     
         '''
-                #Create the SQL Statements
-           #SQL Statement for extracting the userid given a nickname
+        #Create the SQL Statements
+        #SQL Statement for extracting the User using user_id
+        query1 = 'SELECT * from User WHERE user_id = ?'
            
-        query = 'UPDATE User SET lastName = ?,firstName = ?, \
+        query2 = 'UPDATE User SET lastName = ?,firstName = ?, \
                                            phoneNumber = ?,email = ?, \
                                            birthDate = ?,gender = ?\
                                            WHERE user_id = ?'
-        #temporal variables
-        firstname = User.get('firstName', None)
-        lastname = User.get('lastName', None)
-        phonenumber = User.get('phoneNumber', None)
-        email = User.get('email', None)
-        birthdate = User.get('birthDate', None)
-        gender = User.get('gender', None)
+        
+        firstName = user.get('firstname', None)
+        lastName = user.get('lastname', None)
+        phoneNumber = user.get('phonenumber', None)
+        email = user.get('email', None)
+        birthDate = user.get('dateofBirth', None)
+        gender = user.get('gender', None)
 
         #Activate foreign key support
         self.set_foreign_keys_support()
         #Cursor and row initialization
         self.con.row_factory = sqlite3.Row
         cur = self.con.cursor()
-        #Execute the statement to extract the id associated to a nickname
-        pvalue = (nickname,)
+        #Execute the statement associated to a user_id
+        pvalue = (user_id,)
         cur.execute(query1, pvalue)
         #Only one value expected
         row = cur.fetchone()
         #if does not exist, return
         if row is None:
-            return None
+            return False 
         else:
-            user_id = row["user_id"]
             #execute the main statement
-            pvalue = (lastname, firstname, phonenumber, email, birthdare, gender)
-            cur.execute(query, pvalue)
+            pvalue = (lastName, firstName, phoneNumber, email, birthDate, gender, user_id)
+            cur.execute(query2, pvalue)
             self.con.commit()
-            #Check that I have modified the user
+            #Check that if the user has been modified
             if cur.rowcount < 1:
                 return None
-            return user_id
+            return True
 
     def delete_user(self, user_id):
         '''
+        Remove all user information of the user with the user_id passed in as
+        argument.
+
+        :param user_id: The user_id of the user to be deleted
+
+        :return: True if the user is deleted, False otherwise.
         
         '''
         #Create the SQL Statements
           #SQL Statement for deleting the user information
-        query = 'DELETE FROM users WHERE user_id = ?'
+        query = 'DELETE FROM User WHERE user_id = ?'
         #Activate foreign key support
         self.set_foreign_keys_support()
         #Cursor and row initialization
@@ -664,112 +849,915 @@ class Connection(object):
         pvalue = (user_id,)
         cur.execute(query, pvalue)
         self.con.commit()
-        #Check that it has been deleted
+        #Check that if the user has been deleted
         if cur.rowcount < 1:
             return False
         return True
 
-    def get_reservation(self, res_id):
+    #TemplateFlight Table API
+    def get_template_flight(self, tflight_id):
         '''
+        Extracts all the information of a templateflight from the database.
+
+        :param str tflight_id: The tflight_id of the templateflight to search for.
+        :return: dictionary with the format provided in the method:
+            :py:meth:`_create_template_flight_object`
         '''
-        query = 'SELECT * FROM Reservation WHERE res_id = ?'
+
+        #SQL Statement for retrieving the template information for given tflight_id
+        query = 'SELECT * from TemplateFlight WHERE tflight_id = ?'
+    
+        #Activate foreign key support
         self.set_foreign_keys_support()
+        #Cursor and row initialization
         self.con.row_factory = sqlite3.Row
         cur = self.con.cursor()
-        pvalue = (res_id,)
+        # Execute the SQL Statement to retrieve the template flight information.
+        # Create first the valuse
+        pvalue = (tflight_id, )
+        #execute the statement
+        cur.execute(query, pvalue)
+        #Process the response. Only one posible row is expected.
+        row = cur.fetchone()
+        if row is None:
+            return False 
+        else:
+            return self._create_template_flight_object(row)
+
+    def create_template_flight(self, templateflight):
+        '''
+        Create a new templateflight in the database.
+
+        :param dict user: a dictionary for a templateflight with the information to be created. The
+                dictionary has the following structure:
+
+                .. code-block:: javascript
+
+                    templateflight = {'searchid': tflight_id,
+                                        'origin': origin,
+                                        'destination': destination,
+                                        'departuretime': dep_time,
+                                        'arrivaltime': arr_time }
+                    
+
+                where:     
+                * ``searchid``: id of entered travel details (INT)
+                * ``origin`: travel from (TEXT)
+                * ``destination``: travel to (TEXT)
+                * ``departuretime``: intended departure time (INT)
+                * ``arrivaltime``: intended arrival time (INT)
+        Note that all values are string if they are not otherwise indicated.
+
+        :return: True when templateflight is created 
+        :raise ValueError: if the templateflight argument is not well formed.
+        '''
+        query1 = 'SELECT * from TemplateFlight WHERE tflight_id = ?'
+        query2 = 'INSERT INTO TemplateFlight (tflight_id, depTime, arrTime, origin, destination)\
+                  VALUES(?,?,?,?,?)'
+
+        tflight_id = templateflight.get('searchid', None)
+        origin = templateflight.get('origin', None)
+        destination = templateflight.get('destination', None)
+        depTime = templateflight.get('departuretime', None)
+        arrTime = templateflight.get('arrivaltime', None)
+
+
+        #Activate foreign key support
+        self.set_foreign_keys_support()
+        #Cursor and row initialization
+        self.con.row_factory = sqlite3.Row
+        cur = self.con.cursor()
+        
+        #Execute the statement to check is the template flight exists
+        pvalue =(tflight_id,)
+        cur.execute(query1, pvalue) 
+          
+        #No value expected 
+        row = cur.fetchone()
+        #If there is no templateflight add rows in TemplateFlight
+        if row is None:
+            #Add the row 
+            # Execute the statement
+            pvalue = (tflight_id, depTime, arrTime, origin, destination)
+            cur.execute(query2, pvalue)
+            self.con.commit()
+            return True
+        else:
+            return None
+
+    def modify_template_flight(self, templateflight):
+        '''
+        Modify the information of a templateflight.
+
+        :param dict user: a dictionary for user with the information to be created.
+                          tflight_id must be given in order to make modifications. 
+                          The dictionary has the following structure:
+
+                .. code-block:: javascript
+
+                    templateflight = {'searchid': tflight_id,
+                                        'origin': origin,
+                                        'destination': destination,
+                                        'departuretime': dep_time,
+                                        'arrivaltime': arr_time }
+                    
+
+                where:     
+                * ``searchid``: id of entered travel details (INT)
+                * ``origin`: travel from (TEXT)
+                * ``destination``: travel to (TEXT)
+                * ``departuretime``: intended departure time (INT)
+                * ``arrivaltime``: intended arrival time (INT)
+
+        Note that all values are string if they are not otherwise indicated.
+
+        :return: True when templateflight is modified or False is the tflight_id does not exist
+        :raise ValueError: if the templateflight argument is not well formed.     
+        '''
+        #SQL statement for template flight existence and modifications
+        query1 = 'SELECT * from TemplateFlight WHERE tflight_id = ?'
+           
+        query2 = 'UPDATE TemplateFlight SET depTime = ?, arrTime = ?, origin = ?, destination  = ? \
+                                           WHERE tflight_id = ?' 
+        #temporal variables
+        tflight_id = templateflight.get('searchid', None)
+        origin = templateflight.get('origin', None)
+        destination = templateflight.get('destination', None)
+        depTime = templateflight.get('departuretime', None)
+        arrTime = templateflight.get('arrivaltime', None)
+        #Activate foreign key support
+        self.set_foreign_keys_support()
+        #Cursor and row initialization
+        self.con.row_factory = sqlite3.Row
+        cur = self.con.cursor()
+        #Execute the statement 
+        pvalue = (tflight_id,)
+        cur.execute(query1, pvalue)
+        #Only one value expected
+        row = cur.fetchone()
+        #if does not exist, return
+        if row is None:
+            return False
+        else:
+            #execute the main statement
+            pvalue = (depTime, arrTime, origin, destination, tflight_id)
+            cur.execute(query2, pvalue)
+            self.con.commit()
+            #Check that if the templateflight is modified
+            if cur.rowcount < 1:
+                return None
+            return True
+
+    def delete_template_flight(self, tflight_id):
+        '''
+        Remove all templateflight information with the tflight_id passed in as
+        argument.
+
+        :param tflight_id: The tflight_id of the template flight to be deleted
+
+        :return: True if the template flight is deleted, False otherwise.
+        '''
+        #Create the SQL Statements
+        #SQL Statement for deleting template flight information
+        query = 'DELETE FROM TemplateFlight WHERE tflight_id = ?'
+        #Activate foreign key support
+        self.set_foreign_keys_support()
+        #Cursor and row initialization
+        self.con.row_factory = sqlite3.Row
+        cur = self.con.cursor()
+        #Execute the statement to delete
+        pvalue = (tflight_id,)
         cur.execute(query, pvalue)
         self.con.commit()
+        #Check that template flight has been deleted
+        if cur.rowcount < 1:
+            return False
+        return True
+
+    #Flight Table API
+    def get_flight(self, flight_id):
+        '''
+        Extracts all the information of a flight from the database using flight_id.
+
+        :param str flight_id: The flight_id of the flight to search for.
+        :return: dictionary with the format provided in the method:
+            :py:meth:`_create_flight_object`
+        '''
+        #SQL Statement for retrieving the flight information for given flight_id
+        query = 'SELECT * from Flight WHERE flight_id = ?'
+    
+        #Activate foreign key support
+        self.set_foreign_keys_support()
+        #Cursor and row initialization
+        self.con.row_factory = sqlite3.Row
+        cur = self.con.cursor()
+        # Execute the SQL Statement to retrieve the flight information.
+        # Create first the valuse
+        pvalue = (flight_id, )
+        #execute the statement
+        cur.execute(query, pvalue)
+        #Process the response. Only one posible row is expected.
         row = cur.fetchone()
-        return self._create_reservation_object(row)
+        if row is None:
+            return False 
+        else:
+            return self._create_flight_object(row)
+
+    def get_flights_by_template(self, template_id):
+        '''
+        Extracts all the information of flights from the database using template_id.
+
+        :param str template_id: The template_id of the flights to search for.
+        :return: dictionary with the format provided in the method:
+            :py:meth:`_create_template_flight_object`
+        '''
+        #SQL Statement for retrieving the flights information for given templateid
+        query = 'SELECT * from Flight WHERE template_id = ?'
+    
+        #Activate foreign key support
+        self.set_foreign_keys_support()
+        #Cursor and row initialization
+        self.con.row_factory = sqlite3.Row
+        cur = self.con.cursor()
+        # Execute the SQL Statement to retrieve the flights information.
+        # Create first the valuse
+        pvalue = (template_id, )
+        #execute the statement
+        cur.execute(query, pvalue)
+        #Process the response. 
+        rows = cur.fetchall()
+        if rows is None:
+            return None
+        flights = [] 
+        for row in rows:
+            flights.append(self._create_flight_object(row))
+        return flights
+
+
+    def create_flight(self, flight):
+        '''
+        Create a new flight in the database.
+
+        :param dict flight: a dictionary for flight with the information to be created. The
+                dictionary has the following structure:
+
+                .. code-block:: javascript
+
+                    flight = {'searchresultid': result_id ,
+                                'flightid':flight_id ,
+                                'code': code,
+                                'price': price,
+                                'departuredate':departure_date,
+                                'arrivaldate':arrival_date,
+                                'gate':gate ,
+                                'totalseats':total_seats,
+                                'seatsleft':seats_left}
+                where:     
+                * ``searchresultid``: id of entered travel details (INT)
+                * ``flightid``: id of a flight (INT)
+                * ``code``: reference for a reservation (TEXT)
+                * ``price``: date of reservation (INT)
+                * ``departuredate``: flight departure date (INT)
+                * ``arrivaldate``: flight arrival date (INT)
+                * ``gate``: gate number (TEXT)
+                * ``totalseats``: total number of seats in the flight(INT)
+                * ``seatsleft``: number seats vacant (INT)
+        Note that all values are string if they are not otherwise indicated.
+
+        :return: True when flight is created 
+        :raise ValueError: if the flight argument is not well formed.
+        
+        '''
+        query1 = 'SELECT * from Flight WHERE flight_id = ?'
+        query2 = 'INSERT INTO Flight (flight_id, code, price, gate, depDate, arrDate, nbInitialSeats, nbSeatsLeft, template_id)\
+                  VALUES(?,?,?,?,?,?,?,?,?)'
+        #Extract information from the parameter passed
+
+        flight_id = flight.get('flightid', None)
+        template_id = flight.get('searchresultid', None)
+        code = flight.get('code', None)
+        gate = flight.get('gate', None)
+        price = flight.get('price', None)
+        depDate = flight.get('departuredate', None)
+        arrDate = flight.get('arrivaldate', None)
+        nbInitialSeats = flight.get('totalseats', None)
+        nbSeatsLeft = flight.get('seatsleft', None)
+        
+        #Activate foreign key support
+        self.set_foreign_keys_support()
+        #Cursor and row initialization
+        self.con.row_factory = sqlite3.Row
+        cur = self.con.cursor()
+        
+        #Execute the statement to check if a flight with same id exists
+        pvalue =(flight_id,)
+        cur.execute(query1, pvalue) 
+          
+        #No value expected 
+        row = cur.fetchone()
+        #If there is no flight add rows in Flight
+        if row is None:
+            # Execute the statement
+            pvalue = (flight_id, code, price, gate, depDate, arrDate, nbInitialSeats, nbSeatsLeft, template_id)
+            cur.execute(query2, pvalue)
+            self.con.commit()
+            return True
+        else:
+            return None
+
+    def modify_flight(self, flight):
+        '''
+        Modify the information of a flight.
+
+        :param dict flight: a dictionary for user with the information to be created.
+                          flight_id must be given in order to make modifications. 
+                          The dictionary has the following structure:
+
+                .. code-block:: javascript
+
+                    flight = {'searchresultid': result_id ,
+                                'flightid':flight_id ,
+                                'code': code,
+                                'price': price,
+                                'departuredate':departure_date,
+                                'arrivaldate':arrival_date,
+                                'gate':gate ,
+                                'totalseats':total_seats,
+                                'seatsleft':seats_left}
+                where:     
+                * ``searchresultid``: id of entered travel details (INT)
+                * ``flightid``: id of a flight (INT)
+                * ``code``: reference for a reservation (TEXT)
+                * ``price``: date of reservation (INT)
+                * ``departuredate``: flight departure date (INT)
+                * ``arrivaldate``: flight arrival date (INT)
+                * ``gate``: gate number (TEXT)
+                * ``totalseats``: total number of seats in the flight(INT)
+                * ``seatsleft``: number seats vacant (INT)
+        Note that all values are string if they are not otherwise indicated.
+
+        :return: True when flight is modified or False is the flight_id does not exist
+        :raise ValueError: if the flight argument is not well formed.     
+        '''
+
+        query1 = 'SELECT * from Flight WHERE flight_id = ?'
+           
+        query2 = 'UPDATE Flight SET code = ?, price = ?, gate = ?, depDate = ?, \
+                                        arrDate = ?, nbInitialSeats = ?, nbSeatsLeft = ?, template_id = ? \
+                                           WHERE flight_id = ?' 
+        #Extract information from the parameter passed
+        flight_id = flight.get('flightid', None)
+        template_id = flight.get('searchresultid')
+        code = flight.get('code', None)
+        gate = flight.get('gate', None)
+        price = flight.get('price', None)
+        depDate = flight.get('departuredate', None)
+        arrDate = flight.get('arrivaldate', None)
+        nbInitialSeats = flight.get('totalseats', None)
+        nbSeatsLeft = flight.get('seatsleft', None)
+        #Activate foreign key support
+        self.set_foreign_keys_support()
+        #Cursor and row initialization
+        self.con.row_factory = sqlite3.Row
+        cur = self.con.cursor()
+        #Execute the statement to check if the flight exists
+        pvalue = (flight_id,)
+        cur.execute(query1, pvalue)
+        #Only one value expected
+        row = cur.fetchone()
+        #if does not exist, return
+        if row is None:
+            return False
+        else:
+            #execute the main statement
+            pvalue = (code, price, gate, depDate, arrDate, nbInitialSeats, nbSeatsLeft, template_id, flight_id)
+            cur.execute(query2, pvalue)
+            self.con.commit()
+            #Check that if the flight is modified.
+            if cur.rowcount < 1:
+                return None
+            return True
+
+    def delete_flight(self, flight_id):
+        '''
+        Remove all flight information of a flight with the flight_id passed in as
+        argument.
+
+        :param flight_id: The flight_id of the user to be deleted
+
+        :return: True if the flight is deleted, False otherwise.
+        '''
+        #Create the SQL Statements
+          #SQL Statement for deleting a flight information
+        query = 'DELETE FROM Flight WHERE flight_id = ?'
+        #Activate foreign key support
+        self.set_foreign_keys_support()
+        #Cursor and row initialization
+        self.con.row_factory = sqlite3.Row
+        cur = self.con.cursor()
+        #Execute the statement to delete
+        pvalue = (flight_id,)
+        cur.execute(query, pvalue)
+        self.con.commit()
+        #Check that if the flight has been deleted
+        if cur.rowcount < 1:
+            return False
+        return True
+
+
+    #Reservation Table API
+    def get_reservation(self, reservation_id):
+        '''
+        Extracts all the information of a reservation from the database.
+
+        :param str reservation_id: The reservation_id of the reservation to search for.
+        :return: dictionary with the format provided in the method:
+            :py:meth:`_create_reservation_object`
+        '''
+        #Create the SQL Statements for retrieving information of a reservation
+        query = 'SELECT * FROM Reservation WHERE reservation_id = ?'
+        #Activate foreign key support
+        self.set_foreign_keys_support()
+        #Create the cursor
+        self.con.row_factory = sqlite3.Row
+        cur = self.con.cursor()
+        #Execute main SQL Statement
+        pvalue = (reservation_id,)
+        cur.execute(query, pvalue)
+        #Process the result
+        self.con.commit()
+        row = cur.fetchone()
+        if row is None:
+            return False 
+        else:
+            return self._create_reservation_object(row)
 
     def get_reservation_list(self):
         '''
+        Extracts all the information of the reservations from the database.
+
+        :return: dictionary with the format provided in the method:
+            :py:meth:`_create_reservation_object`
         '''
+        #Create the SQL Statements for retrieving information of the reservations
         query = 'SELECT * FROM Reservation'
+        #Activate foreign key support
         self.set_foreign_keys_support()
+        #Create the cursor
         self.con.row_factory = sqlite3.Row
         cur = self.con.cursor()
+        #Execute main SQL Statement
         cur.execute(query)
         rows = cur.fetchall()
+        #Process the result
         if rows is None:
             return None
         reservations = []
         for row in rows:
-            reservations.append(_create_reservation_list_object(row))
+            reservations.append(self._create_reservation_object(row))
         return reservations
 
     def get_reservations_by_user(self, creator_id):
         '''
+
+        Extracts all the information of a reservation from the database of a particular user.
+
+        :param str creator_id: The creation_id of the reservation to search for.
+        :return: dictionary with the format provided in the method:
+            :py:meth:`_create_reservation_object`
         '''
+        #Create the SQL Statements for retrieving information of the reservations
         query = 'SELECT * FROM Reservation WHERE creator_id = ?'
+        #Activate foreign key support
         self.set_foreign_keys_support()
+        #Create the cursor
         self.con.row_factory = sqlite3.Row
         cur = self.con.cursor()
+        #Execute main SQL Statement
         pvalue = (creator_id,)
         cur.execute(query, pvalue)
         self.con.commit()
         rows = cur.fetchall()
+        #Process the result
         if rows is None:
             return None
         reservations_user = []
         for row in rows:
-            reservations_user.append(_create_reservation_list_object(row))
+            reservations_user.append(self._create_reservation_object(row))
         return reservations_user
 
     def get_reservations_by_flight(self, flight_id):
         '''
+        Extracts all the information of a reservation from the database of a particular flight.
+
+        :param str flight_id: The flight_id of the reservation to search for.
+        :return: dictionary with the format provided in the method:
+            :py:meth:`_create_reservation_object`
         '''
+        #Create the SQL Statements for retrieving information of the reservations
         query = 'SELECT * FROM Reservation WHERE flight_id = ?'
+        #Activate foreign key support
         self.set_foreign_keys_support()
+        #Create the cursor
         self.con.row_factory = sqlite3.Row
         cur = self.con.cursor()
-        pvalue = (creator_id,)
+        #Execute main SQL Statement
+        pvalue = (flight_id,)
         cur.execute(query, pvalue)
         self.con.commit()
         rows = cur.fetchall()
+        #Process the result
         if rows is None:
             return None
-        reservations_user = []
+        reservations_flight = []
         for row in rows:
-            reservations_user.append(_create_reservation_list_object(row))
-        return reservations_user
+            reservations_flight.append(self._create_reservation_list_object(row))
+        return reservations_flight
 
-    def create_reservation(self):
+    def create_reservation(self, reservation):
+        '''
+        Create a new reservation in the database.
 
-    def modify_reservation(self):
+        :param dict reservation: a dictionary for reservation with the information to be created. The
+                dictionary has the following structure:
 
-    def delete_reservation(self):
+                .. code-block:: javascript
 
+                    reservation = {'reservationid': reservation_id,
+                                    'reference': reference,
+                                    'reservationdate' : reservation_date,
+                                    'userid' : creator_id,
+                                    'flightid': flight_id}
+                    
+
+                where:     
+                * ``reservationid``: reservation id for a reservation (INT)
+                * ``reference``: reference for a reservation (TEXT)
+                * ``reservationdate``: date of reservation (INT)
+                * ``userid``: id of the user making a reservation (INT)
+                * ``flightid``: flightid for which reservation is made (INT)
+
+        :return: True when reservation is created 
+        :raise ValueError: if the reservation argument is not well formed.
+        
+        '''
+        #SQL Statement to create the row in  Reservation table
+
+        query1 = 'SELECT * from Reservation WHERE reservation_id = ?'
+
+        query2 = 'INSERT INTO Reservation (reservation_id, reference, re_date, creator_id, flight_id)\
+                  VALUES(?,?,?,?,?)'
+
+        reservation_id = reservation.get('reservationid', None)
+        reference = reservation.get('reference', None)
+        reservation_date = reservation.get('reservationdate', None)
+        creator_id = reservation.get('userid', None)
+        flight_id = reservation.get('flightid', None)
+
+        #Activate foreign key support
+        self.set_foreign_keys_support()
+        #Cursor and row initialization
+        self.con.row_factory = sqlite3.Row
+        cur = self.con.cursor()
+        
+        #Execute the statement to check if a reservation with the reservation_id already exists
+        pvalue =(reservation_id,)
+        cur.execute(query1, pvalue) 
+          
+        #No value expected 
+        row = cur.fetchone()
+        #If there is no reservation add rows in Reservation 
+        if row is None:
+            #Add the row in 
+            # Execute the statement
+            pvalue = (reservation_id, reference, timestamp, creator_id, flight_id)
+            cur.execute(query2, pvalue)
+            self.con.commit()
+            return True
+        else:
+            return False
+
+    def modify_reservation(self, reservationid,reference, userid, flightid):
+        '''
+        Modify the information of a reservation.
+
+        :param str reservationid:
+        :param str reference: 
+        :param str userid: 
+        :param str flightid: 
+                    
+                where:     
+                * ``reservationid``: reservation id for a reservation (INT)
+                * ``reference``: reference for a reservation (TEXT)
+                * ``userid``: id of the user making a reservation (INT)
+                * ``flightid``: flightid for which reservation is made (INT)
+
+        Note that all values are string if they are not otherwise indicated.
+
+        :return: True when reservation is modified or False is the reservationid does not exist
+        '''
+
+        query1 = 'SELECT * from Reservation WHERE reservation_id = ?'
+           
+        query2 = 'UPDATE Reservation SET reference = ?,creator_id = ?, flight_id = ? \
+                                           WHERE reservation_id = ?' 
+        #temporal variables
+        reservation_id = reservationid
+        reference = reference
+        creator_id = userid
+        flight_id = flightid
+        #Activate foreign key support
+        self.set_foreign_keys_support()
+        #Cursor and row initialization
+        self.con.row_factory = sqlite3.Row
+        cur = self.con.cursor()
+        #Execute the statement to check if the particular reservation
+        pvalue = (reservation_id,)
+        cur.execute(query1, pvalue)
+        #Only one value expected
+        row = cur.fetchone()
+        #if does not exist, return
+        if row is None:
+            return False
+        else:
+            #execute the main statement
+            pvalue = (reference, creator_id, flight_id, reservation_id)
+            cur.execute(query2, pvalue)
+            self.con.commit()
+            #Check that If reservation has been modified
+            if cur.rowcount < 1:
+                return None
+            return True
+
+    def delete_reservation(self, reservation_id):
+        '''
+        Remove all reservation information of a reservation with the reservation_id passed in as
+        argument.
+
+        :param reservation_id: The reservation_id of a reservation to be deleted
+
+        :return: True if the reservation is deleted, False otherwise.
+        '''
+        #Create the SQL Statements
+          #SQL Statement for deleting a reservation information
+        query = 'DELETE FROM Reservation WHERE reservation_id = ?'
+        #Activate foreign key support
+        self.set_foreign_keys_support()
+        #Cursor and row initialization
+        self.con.row_factory = sqlite3.Row
+        cur = self.con.cursor()
+        #Execute the statement to delete
+        pvalue = (reservation_id,)
+        cur.execute(query, pvalue)
+        self.con.commit()
+        #Check that if the reservation has been deleted
+        if cur.rowcount < 1:
+            return False
+        return True
+    #Ticket Table API
     def get_ticket(self, ticket_id):
+        '''
+        Extracts all the information of a ticket from the database.
 
+        :param str ticket_id: The ticket_id of the reservation to search for.
+        :return: dictionary with the format provided in the method:
+            :py:meth:`_create_ticket_object`
+        '''
+        #SQL Statement for retrieving the ticket information for given ticketid
+        query = 'SELECT * FROM Ticket WHERE ticket_id = ?'
+        #Activate foreign key support
+        self.set_foreign_keys_support()
+        #Cursor and row initialization
+        self.con.row_factory = sqlite3.Row
+        cur = self.con.cursor()
+        # Execute the SQL Statement to retrieve the ticket information.
+        pvalue = (ticket_id,)
+        cur.execute(query, pvalue)
+        self.con.commit()
+        row = cur.fetchone()
+        #Process the response. 
+        if row is None:
+            return False 
+        else:
+            return self._create_ticket_object(row)
+
+     
     def get_tickets(self):
+        '''
+        Extracts all the information of the tickets from the database.
+
+        :return: dictionary with the format provided in the method:
+            :py:meth:`_create_ticket_object`
+        '''
+        #SQL Statement for retrieving the ticket information
+        query = 'SELECT * FROM Ticket'
+        #Activate foreign key support
+        self.set_foreign_keys_support()
+        #Cursor and row initialization
+        self.con.row_factory = sqlite3.Row
+        cur = self.con.cursor()
+        # Execute the SQL Statement to retrieve the ticket information.
+        cur.execute(query)
+        rows = cur.fetchall()
+        #Process the response. 
+        if rows is None:
+            return None
+        tickets = []
+        for row in rows:
+            tickets.append(self._create_ticket_object(row))
+        return tickets
 
     def get_tickets_by_reservation(self, reservation_id):
+        '''
+        Extracts all the information of a ticket from the database of a particular reservation.
 
-    def create_ticket(self):
+        :param str reservation_id: The resevation_id of the reservation to search for.
+        :return: dictionary with the format provided in the method:
+            :py:meth:`_create_ticket_object`
+        '''
+        #SQL Statement for retrieving the ticket information for given reservationid
+        query = 'SELECT * from Ticket WHERE reservation_id = ?'
+    
+        #Activate foreign key support
+        self.set_foreign_keys_support()
+        #Cursor and row initialization
+        self.con.row_factory = sqlite3.Row
+        cur = self.con.cursor()
+        # Execute the SQL Statement to retrieve the ticket information.
+        pvalue = (reservation_id, )
+        #execute the statement
+        cur.execute(query, pvalue)
+        #Process the response. 
+        rows = cur.fetchall()
+        if rows is None:
+            return False 
+        else:
+            tickets = []
+            for row in rows:
+                tickets.append(self._create_ticket_object(row))
+            return tickets
 
-    def modify_ticket(self, ticket_id):
+
+    def create_ticket(self, ticket):
+        '''
+        Create a new ticket in the database.
+
+        :param dict ticket: a dictionary for user with the information to be created. The
+                dictionary has the following structure:
+
+                .. code-block:: javascript
+
+                    ticket = {'ticketnumber': ticket_id,
+                                'reservationid': reservation_id,
+                                'firstname': firstname,
+                                'lastname': lastname,
+                                'gender': gender,
+                                'age':age,
+                                'seat':seat}
+                    
+            where:
+            * ``ticketnumber``: user id for an user (INT)
+            * ``reservationid``: reservation id of a reservation (INT)
+            * ``lastname``: lastname of the passenger (TEXT)
+            * ``firstname``: firstname of the passenger (TEXT)
+            * ``gender``: passenger's gender (TEXT)
+            * ``age``: passenger's age(INT)
+            * ``seat``: seatnumber (INT)
+        Note that all values are string if they are not otherwise indicated.
+
+        :return: True when ticket is created 
+        :raise ValueError: if the ticket argument is not well formed.
+        '''
+        query1 = 'SELECT * from Ticket WHERE ticket_id = ?'
+
+        query2 = 'INSERT INTO Ticket (ticket_id, firstName, lastName, gender, age, reservation_id, seat )\
+                  VALUES(?,?,?,?,?,?,?)'
+    
+        ticket_id = ticket.get('ticketnumber', None)
+        reservation_id = ticket.get('reservationid', None)
+        firstName = ticket.get('firstname', None)
+        lastName = ticket.get('lastname', None)
+        gender = ticket.get('gender', None)
+        age = ticket.get('age', None)
+        seat = ticket.get('seat', None)
+
+        #Activate foreign key support
+        self.set_foreign_keys_support()
+        #Cursor and row initialization
+        self.con.row_factory = sqlite3.Row
+        cur = self.con.cursor()
+        
+        #Execute the statement to check if the ticket already exists
+        pvalue =(ticket_id,)
+        cur.execute(query1, pvalue) 
+          
+        #No value expected 
+        row = cur.fetchone()
+        #If there is no ticket add rows in Ticket
+        if row is None:
+            # Execute the statement
+            pvalue = (ticket_id, firstName, lastName, gender, age, reservation_id, seat)
+            cur.execute(query2, pvalue)
+            self.con.commit()
+            return True
+        else:
+            return False
+
+    def modify_ticket(self, ticket):
+        '''
+        Modify the information of a ticket.
+
+        :param dict ticket: a dictionary for ticket with the information to be created.
+                          ticket_id must be given in order to make modifications. 
+                          The dictionary has the following structure:
+
+                .. code-block:: javascript
+
+                    ticket = {'ticketnumber': ticket_id,
+                                'reservationid': reservation_id,
+                                'firstname': firstname,
+                                'lastname': lastname,
+                                'gender': gender,
+                                'age':age,
+                                'seat':seat}
+                    
+            where:
+            * ``ticketnumber``: user id for an user (INT)
+            * ``reservationid``: reservation id of a reservation (INT)
+            * ``lastname``: lastname of the passenger (TEXT)
+            * ``firstname``: firstname of the passenger (TEXT)
+            * ``gender``: passenger's gender (TEXT)
+            * ``age``: passenger's age(INT)
+            * ``seat``: seatnumber (INT)
+        Note that all values are string if they are not otherwise indicated.
+
+        :return: True when ticket is modified or False is the ticket_id does not exist
+        
+        '''
+        query1 = 'SELECT * from Ticket WHERE ticket_id = ?'
+           
+        query2 = 'UPDATE Ticket SET firstName = ?, lastName = ?, gender = ? ,\
+                                        age = ?, reservation_id = ?, seat = ? \
+                                           WHERE ticket_id = ?' 
+        #temporal variables
+        ticket_id = ticket.get('ticketnumber', None)
+        reservation_id = ticket.get('reservationid', None)
+        firstName = ticket.get('firstname', None)
+        lastName = ticket.get('lastname', None)
+        gender = ticket.get('gender', None)
+        age = ticket.get('age', None)
+        seat = ticket.get('seat', None)
+        #Activate foreign key support
+        self.set_foreign_keys_support()
+        #Cursor and row initialization
+        self.con.row_factory = sqlite3.Row
+        cur = self.con.cursor()
+        #Execute the statement 
+        pvalue = (ticket_id,)
+        cur.execute(query1, pvalue)
+        #Only one value expected
+        row = cur.fetchone()
+        #if does not exist, return
+        if row is None:
+            return False
+        else:
+            #execute the main statement
+            pvalue = (firstName, lastName, gender, age, reservation_id, seat, ticket_id,)
+            cur.execute(query2, pvalue)
+            self.con.commit()
+            #Check that if ticket is modified
+            if cur.rowcount < 1:
+                return False
+            return True
 
     def delete_ticket(self, ticket_id):
+        '''
+        Remove all ticket information of the ticket with the ticket_id passed in as
+        argument.
 
-    def get_flight(self, flight_id):
+        :param ticket_id: The ticket_id of a ticket to be deleted
 
-    def get_flights_by_template(self, temmplate_id):
+        :return: True if the ticket is deleted, False otherwise.
+        '''
+        #Create the SQL Statements
+          #SQL Statement for deleting the ticket information
+        query = 'DELETE FROM Ticket WHERE ticket_id = ?'
+        #Activate foreign key support
+        self.set_foreign_keys_support()
+        #Cursor and row initialization
+        self.con.row_factory = sqlite3.Row
+        cur = self.con.cursor()
+        #Execute the statement to delete
+        pvalue = (ticket_id,)
+        cur.execute(query, pvalue)
+        self.con.commit()
+        #Check that if the ticket has been deleted
+        if cur.rowcount < 1:
+            return False
+        return True
 
-    def create_flight(self):
-
-    def modify_flight(self, flight_id):
-
-    def delete_flight(self, flight_id):
-
-    def get_template_flight(self, flight_id):
-
-    def create_template_flight(self):
-
-    def modify_template_flight(self, tflight_id):
-
-    def delete_template_flight(self, tflight_id):
-
+    
+    
 
 
 
