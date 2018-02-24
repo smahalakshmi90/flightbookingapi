@@ -7,15 +7,15 @@ CREATE TABLE IF NOT EXISTS User(
      firstName  TEXT,
      phoneNumber    TEXT,
      email  TEXT,
-     birthDate  INTEGER,
+     birthDate  TEXT,
      gender     TEXT,
      registrationDate   INTEGER,
     PRIMARY KEY(user_id ));
 
 CREATE TABLE IF NOT EXISTS TemplateFlight(
      tflight_id     INTEGER NOT NULL UNIQUE,
-     depTime    INTEGER,
-     arrTime    INTEGER,
+     depTime    TEXT,
+     arrTime    TEXT,
      origin     TEXT,
      destination    TEXT,
     PRIMARY KEY( tflight_id ));
@@ -25,8 +25,8 @@ CREATE TABLE IF NOT EXISTS Flight(
      code   TEXT UNIQUE,
      price  INTEGER,
      gate   TEXT,
-     depDate    INTEGER,
-     arrDate    INTEGER,
+     depDate    TEXT,
+     arrDate    TEXT,
      nbInitialSeats     INTEGER,
      nbSeatsLeft    INTEGER,
      template_id    INTEGER NOT NULL,
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS Flight(
 CREATE TABLE IF NOT EXISTS Reservation(
      reservation_id     INTEGER NOT NULL UNIQUE,
      reference  TEXT,
-     re_date    INTEGER,
+     re_date    TEXT,
      creator_id     INTEGER NOT NULL,
      flight_id  INTEGER NOT NULL,
     PRIMARY KEY( reservation_id ),
