@@ -756,7 +756,7 @@ class Connection(object):
             pvalue = (lastName, firstName, phoneNumber, email, birthDate, gender, timestamp)
             cur.execute(query2, pvalue)
             self.con.commit()
-            return True
+            return cur.lastrowid
         else:
             return None
 
@@ -852,7 +852,7 @@ class Connection(object):
         
         '''
         #Extracts the int which is the id for a user in the database
-        match = re.match(r'user-(\d{1,3})', user_id)
+        match = re.match('user-(\d{1,3})', user_id)
         if match is None:
             raise ValueError("The userid is malformed")
         user_id = int(match.group(1))
@@ -975,7 +975,7 @@ class Connection(object):
             pvalue = (tflight_id, depTime, arrTime, origin, destination)
             cur.execute(query2, pvalue)
             self.con.commit()
-            return True
+            return cur.lastrowid
         else:
             return None
 
@@ -1232,7 +1232,7 @@ class Connection(object):
             pvalue = (flight_id, code, price, gate, depDate, arrDate, nbInitialSeats, nbSeatsLeft, template_id)
             cur.execute(query2, pvalue)
             self.con.commit()
-            return True
+            return cur.lastrowid
         else:
             return None
 
@@ -1545,9 +1545,9 @@ class Connection(object):
             pvalue = (reservation_id, reference, timestamp, creator_id, flight_id)
             cur.execute(query2, pvalue)
             self.con.commit()
-            return True
+            return cur.lastrowid
         else:
-            return False
+            return None
 
     def modify_reservation(self, reservationid,reference, userid, flightid):
         '''
@@ -1817,9 +1817,9 @@ class Connection(object):
             pvalue = (ticket_id, firstName, lastName, gender, age, reservation_id, seat)
             cur.execute(query2, pvalue)
             self.con.commit()
-            return True
+            return cur.lastrowid
         else:
-            return False
+            return None
 
     def modify_ticket(self, ticket):
         '''
