@@ -979,26 +979,25 @@ class Connection(object):
         else:
             return None
 
-    def modify_template_flight(self, templateflight):
+    def modify_template_flight(self, tflight_id, templateflight):
         '''
         Modify the information of a templateflight.
 
+        :param tflight_id: The id of the templateflight. 
+                        The tflight_id is a string with format ``search-\d{1,4}``.
         :param dict user: a dictionary for user with the information to be created.
                           tflight_id must be given in order to make modifications. 
                           The dictionary has the following structure:
 
                 .. code-block:: javascript
 
-                    templateflight = {'searchid': tflight_id,
-                                        'origin': origin,
+                    templateflight = { 'origin': origin,
                                         'destination': destination,
                                         'departuretime': dep_time,
                                         'arrivaltime': arr_time }
                     
 
                 where:     
-                * ``searchid``: id of entered travel details (INT).
-                                The tflight_id is a string with format ``search-\d{1,4}``.
                 * ``origin`: travel from (TEXT)
                 * ``destination``: travel to (TEXT)
                 * ``departuretime``: intended departure time (INT)
@@ -1020,7 +1019,6 @@ class Connection(object):
         query2 = 'UPDATE TemplateFlight SET depTime = ?, arrTime = ?, origin = ?, destination  = ? \
                                            WHERE tflight_id = ?' 
         #temporal variables
-        tflight_id = templateflight.get('searchid', None)
         origin = templateflight.get('origin', None)
         destination = templateflight.get('destination', None)
         depTime = templateflight.get('departuretime', None)
@@ -1236,10 +1234,12 @@ class Connection(object):
         else:
             return None
 
-    def modify_flight(self, flight):
+    def modify_flight(self, flight_id, flight):
         '''
         Modify the information of a flight.
 
+        :param flight_id: The id of the flight. 
+                        The flight_id is a string with format ``fl-\d{1,4}``.
         :param dict flight: a dictionary for user with the information to be created.
                           flight_id must be given in order to make modifications. 
                           The dictionary has the following structure:
@@ -1247,7 +1247,6 @@ class Connection(object):
                 .. code-block:: javascript
 
                     flight = {'searchresultid': result_id ,
-                                'flightid':flight_id ,
                                 'code': code,
                                 'price': price,
                                 'departuredate':departure_date,
@@ -1258,8 +1257,6 @@ class Connection(object):
                 where:     
                 * ``searchresultid``: id of entered travel details (INT)
                                     The result_id is a string with format ``result-\d{1,4}``.
-                * ``flightid``: id of a flight (INT)
-                                The flight_id is a string with format ``fl-\d{1,4}``.
                 * ``code``: reference for a reservation (TEXT)
                 * ``price``: date of reservation (INT)
                 * ``departuredate``: flight departure date (TEXT)
@@ -1283,7 +1280,6 @@ class Connection(object):
                                         arrDate = ?, nbInitialSeats = ?, nbSeatsLeft = ?, template_id = ? \
                                            WHERE flight_id = ?' 
         #Extract information from the parameter passed
-        flight_id = flight.get('flightid', None)
         template_id = flight.get('searchresultid')
         code = flight.get('code', None)
         gate = flight.get('gate', None)
@@ -1821,18 +1817,19 @@ class Connection(object):
         else:
             return None
 
-    def modify_ticket(self, ticket):
+    def modify_ticket(self, ticket_id, ticket):
         '''
         Modify the information of a ticket.
 
+        :param ticket_id: The id of the ticket. 
+                        The ticket_id is a string with format ``ticketnum-\d{1,4}``.
         :param dict ticket: a dictionary for ticket with the information to be created.
                           ticket_id must be given in order to make modifications. 
                           The dictionary has the following structure:
 
                 .. code-block:: javascript
 
-                    ticket = {'ticketnumber': ticket_id,
-                                'reservationid': reservation_id,
+                    ticket = {'reservationid': reservation_id,
                                 'firstname': firstname,
                                 'lastname': lastname,
                                 'gender': gender,
@@ -1840,8 +1837,6 @@ class Connection(object):
                                 'seat':seat}
                    
             where:
-            * ``ticketnumber``: The id of the ticket. 
-                                The ticketnumber is a string with format ``ticketnum-\d{1,4}``.
             * ``reservationid``: reservation id of a reservation 
                                 The reservationd is a string with format ``res-\d{1,2}``
             * ``lastname``: lastname of the passenger (TEXT)
