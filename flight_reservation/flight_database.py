@@ -1,17 +1,17 @@
-'''
+"""
 Created on 20.02.2018
 
 Provides the database API to access the flight booking system persistent data.
 
 @author: Mahalakshmy Seetharaman
 
-'''
+"""
 
-'''
+"""
 This code has been wriiten based on forum - exercise 1 
-'''
-
+"""
 from datetime import datetime
+from time import gmtime, strftime
 import time, sqlite3, re, os, io
 #Default paths for .db and .sql files to create and populate the database.
 DEFAULT_DB_PATH = "db/flight.db"
@@ -20,7 +20,7 @@ DEFAULT_DATA_DUMP = "db/flight_data_dump.sql"
 
 class Engine(object):
 
-    '''
+    """
     Abstraction of the database.
 
     It includes tools to create, configure,
@@ -37,11 +37,11 @@ class Engine(object):
         calling script. If not specified, the Engine will use the file located
         at *db/flight.db*
 
-    '''
+    """
 
     def __init__(self, db_path=None):
-        '''
-        '''
+        """
+        """
         super(Engine, self).__init__()
         if db_path is not None:
             self.db_path = db_path
@@ -49,30 +49,30 @@ class Engine(object):
             self.db_path = DEFAULT_DB_PATH
 
     def connect(self):
-        '''
+        """
         Creates a connection to the database.
 
         :return: A Connection instance
         :rtype: Connection
 
-        '''
+        """
         return Connection(self.db_path)
 
     def remove_database(self):
-        '''
+        """
         Removes the database file from the filesystem.
 
-        '''
+        """
         if os.path.exists(self.db_path):
             #THIS REMOVES THE DATABASE STRUCTURE
             os.remove(self.db_path)
 
     def clear(self):
-        '''
+        """
         Purge the database removing all records from the tables. However,
         it keeps the database schema (meaning the table structure)
 
-        '''
+        """
         keys_on = 'PRAGMA foreign_keys = ON'
         #THIS KEEPS THE SCHEMA AND REMOVE VALUES
         con = sqlite3.connect(self.db_path)
@@ -88,13 +88,13 @@ class Engine(object):
 
     #METHODS TO CREATE AND POPULATE A DATABASE USING DIFFERENT SCRIPTS
     def create_tables(self, schema=None):
-        '''
+        """
         Create programmatically the tables from a schema file.
 
         :param schema: path to the .sql schema file. If this parmeter is
             None, then *db/flight_schema.sql* is utilized.
 
-        '''
+        """
         con = sqlite3.connect(self.db_path)
         #Database created from schema
         if schema is None:
@@ -108,13 +108,13 @@ class Engine(object):
             con.close()
 
     def populate_tables(self, dump=None):
-        '''
+        """
         Populate programmatically the tables from a dump file.
 
         :param dump:  path to the .sql dump file. If this parmeter is
             None, then *db/forum_data_dump.sql* is utilized.
 
-        '''
+        """
         keys_on = 'PRAGMA foreign_keys = ON'
         con = sqlite3.connect(self.db_path)
         #Activate foreign keys support
@@ -130,7 +130,7 @@ class Engine(object):
 
     #METHODS TO CREATE THE TABLES PROGRAMMATICALLY WITHOUT USING SQL SCRIPT
     def create_user_table(self):
-        '''
+        """
         Create the table ``User`` programmatically, without using .sql file.
 
         Print an error message in the console if it could not be created.
@@ -138,7 +138,7 @@ class Engine(object):
         :return: ``True`` if the table was successfully created or ``False``
             otherwise.
 
-        '''
+        """
         keys_on = 'PRAGMA foreign_keys = ON'
         stmnt = 'CREATE TABLE User(user_id INTEGER NOT NULL PRIMARY KEY, \
                     lastName TEXT,\
@@ -165,14 +165,14 @@ class Engine(object):
         return True
 
     def create_templateflights_table(self):
-        '''
+        """
         Create the table ``TemplateFlight`` programmatically, without using .sql file.
 
         Print an error message in the console if it could not be created.
 
         :return: ``True`` if the table was successfully created or ``False``
             otherwise.
-        '''
+        """
         keys_on = 'PRAGMA foreign_keys = ON'
         stmnt = 'CREATE TABLE TemplateFlight(tflight_id INTEGER NOT NULL UNIQUE PRIMARY KEY,\
                                 depTime INTEGER,\
@@ -195,14 +195,14 @@ class Engine(object):
         return True
 
     def create_flight_table(self):
-        '''
+        """
         Create the table ``Flight`` programmatically, without using .sql file.
 
         Print an error message in the console if it could not be created.
 
         :return: ``True`` if the table was successfully created or ``False``
             otherwise.
-        '''
+        """
         keys_on = 'PRAGMA foreign_keys = ON'
         stmnt = 'CREATE TABLE Flight(flight_id INTEGER NOT NULL UNIQUE PRIMARY KEY, \
                                 code TEXT UNIQUE,\
@@ -231,7 +231,7 @@ class Engine(object):
 
 
     def create_reservation_table(self):
-        '''
+        """
         Create the table ``Reservation`` programmatically, without using .sql file.
 
         Print an error message in the console if it could not be created.
@@ -239,7 +239,7 @@ class Engine(object):
         :return: ``True`` if the table was successfully created or ``False``
             otherwise.
 
-        '''
+        """
         keys_on = 'PRAGMA foreign_keys = ON'
         stmnt = 'CREATE TABLE Reservation(reservation_id INTEGER NOT NULL UNIQUE PRIMARY KEY,\
                                     reference TEXT UNIQUE, \
@@ -264,7 +264,7 @@ class Engine(object):
         return True
 
     def create_ticket_table(self):
-        '''
+        """
         Create the table ``Ticket`` programmatically, without using
         .sql file.
 
@@ -273,7 +273,7 @@ class Engine(object):
         :return: ``True`` if the table was successfully created or ``False``
             otherwise.
 
-        '''
+        """
         keys_on = 'PRAGMA foreign_keys = ON'
         stmnt = 'CREATE TABLE Ticket(ticket_id INTEGER NOT NULL UNIQUE PRIMARY KEY,\
                                     firstName TEXT, \
@@ -301,7 +301,7 @@ class Engine(object):
         
         
 class Connection(object):
-    '''
+    """
     API to access the Flight Booking database.
 
     The sqlite3 connection instance is accessible to all the methods of this
@@ -317,30 +317,30 @@ class Connection(object):
     :param db_path: Location of the database file.
     :type dbpath: str
 
-    '''
+    """
     def __init__(self, db_path):
         super(Connection, self).__init__()
         self.con = sqlite3.connect(db_path)
 
     def close(self):
-        '''
+        """
         Closes the database connection, commiting all changes.
 
-        '''
+        """
         if self.con:
             self.con.commit()
             self.con.close()
 
     #FOREIGN KEY STATUS
     def check_foreign_keys_status(self):
-        '''
+        """
         Check if the foreign keys has been activated.
 
         :return: ``True`` if  foreign_keys is activated and ``False`` otherwise.
         :raises sqlite3.Error: when a sqlite3 error happen. In this case the
             connection is closed.
 
-        '''
+        """
         try:
             #Create a cursor to receive the database values
             cur = self.con.cursor()
@@ -357,12 +357,12 @@ class Connection(object):
         return is_activated
 
     def set_foreign_keys_support(self):
-        '''
+        """
         Activate the support for foreign keys.
 
         :return: ``True`` if operation succeed and ``False`` otherwise.
 
-        '''
+        """
         keys_on = 'PRAGMA foreign_keys = ON'
         try:
             #Get the cursor object.
@@ -376,12 +376,12 @@ class Connection(object):
             return False
 
     def unset_foreign_keys_support(self):
-        '''
+        """
         Deactivate the support for foreign keys.
 
         :return: ``True`` if operation succeed and ``False`` otherwise.
 
-        '''
+        """
         keys_on = 'PRAGMA foreign_keys = OFF'
         try:
             #Get the cursor object.
@@ -400,7 +400,7 @@ class Connection(object):
 
     #Helper for User
     def _create_user_object(self, row):
-        '''
+        """
         It takes a :py:class:`sqlite3.Row` and transform it into a dictionary.
         The resulting dictionary is targeted to build a user
 
@@ -420,13 +420,13 @@ class Connection(object):
             Note that all values in the returned dictionary are string unless
             otherwise stated.
 
-        '''
+        """
         userid = 'user-' + str(row['user_id']) 
         lastname =row['lastName']
         firstname = row['firstName']
         phonenumber = row['phoneNumber'] 
         email = row['email'] 
-        dateofBirth = ['birthDate'] 
+        dateofBirth = row['birthDate']
         gender = row['gender'] 
         registrationDate = row['registrationDate']
 
@@ -442,7 +442,7 @@ class Connection(object):
         return user
                
     def _create_user_list_object(self, row):
-        '''
+        """
         It takes a database Row and transform it into a python dictionary.
         The resulting dictionary is targeted to build a users in a list.
 
@@ -459,7 +459,7 @@ class Connection(object):
             Note that all values in the returned dictionary are string unless
             otherwise stated.
 
-        '''
+        """
         return { 'userid': 'user-' + str(row['user_id']),
                 'firstname': row['firstName'],
                 'lastname': row['lastName'],
@@ -467,7 +467,7 @@ class Connection(object):
 
     #Helper for Reservation
     def _create_reservation_object(self, row):
-        '''
+        """
         It takes a database Row and transform it into a python dictionary.
         The resulting dictionary is targeted to build a reservation.
 
@@ -484,12 +484,12 @@ class Connection(object):
 
             Note that all values in the returned dictionary are string unless
             otherwise stated.     
-        '''
-        reservation_id = 'res-' + str(row['reservation_id'])
+        """
+        reservation_id = row['reservation_id']
         reference = row['reference']
         reservation_date = row['re_date']
-        creator_id = 'bookedby-' + str(row['creator_id'])
-        flight_id = 'fl-' + str(row['flight_id'])
+        creator_id = row['creator_id']
+        flight_id = row['flight_id']
         reservation = {'reservationid': reservation_id,
                        'reference': reference,
                        'reservationdate' : reservation_date,
@@ -499,7 +499,7 @@ class Connection(object):
 
     #Helper for Flight
     def _create_flight_object(self, row):
-        '''
+        """
         It takes a database Row and transform it into a python dictionary.
         The resulting dictionary is targeted to build a flight.
 
@@ -519,9 +519,9 @@ class Connection(object):
             
             Note that all values in the returned dictionary are string unless
             otherwise stated.
-        '''
-        result_id ='result' + str(row['template_id'])
-        flight_id = 'fl-' + str(row['flight_id'])
+        """
+        result_id = row['template_id']
+        flight_id = row['flight_id']
         code = row['code']
         price = row ['price']
         departure_date = row['depDate']
@@ -544,7 +544,7 @@ class Connection(object):
     #Helper for Template Flight
     def _create_template_flight_object(self, row):
 
-        '''
+        """
         It takes a database Row and transform it into a python dictionary.
         The resulting dictionary is targeted to build a template flight.
 
@@ -561,7 +561,7 @@ class Connection(object):
             Note that all values in the returned dictionary are string unless
             otherwise stated.
 
-        '''
+        """
         tflight_id ='search' +str(row['tFlight_id'])
         origin = row['origin']
         destination = row['destination']
@@ -578,7 +578,7 @@ class Connection(object):
 
     #Helper for Ticket
     def _create_ticket_object(self, row):
-        '''
+        """
         It takes a :py:class:`sqlite3.Row` and transform it into a dictionary.
         The resulting dictionary is targeted to build a ticket.
 
@@ -596,9 +596,9 @@ class Connection(object):
             
             Note that all values in the returned dictionary are string unless
             otherwise stated.
-        '''
+        """
         ticket_id ='ticketnum-' + str( row['ticket_id'])
-        reservation_id = 'res' + str( row['reservation_id'])
+        reservation_id = row['reservation_id']
         firstname = row['firstName']
         lastname =row['lastName']
         gender = row['gender']
@@ -620,7 +620,7 @@ class Connection(object):
 
     #User Table API
     def get_user(self, user_id):
-        '''
+        """
         Extracts all the information of a user from the database.
 
         :param user_id: The id of the user. 
@@ -629,12 +629,7 @@ class Connection(object):
             :py:meth:`_create_user_object`
         :raise ValueError: if the user argument is not well formed.
 
-        '''
-        #Extracts the int which is the id for a user in the database
-        match = re.match('user-(\d{1,3})', user_id)
-        if match is None:
-            raise ValueError("The userid is malformed")
-        user_id = int(match.group(1))
+        """
         #SQL Statement for retrieving the user information for given userid
         query = 'SELECT * from User WHERE user_id = ?'
     
@@ -651,18 +646,18 @@ class Connection(object):
         #Process the response. Only one posible row is expected.
         row = cur.fetchone()
         if row is None:
-            return False 
+            return None
         else:
             return self._create_user_object(row)
     
 
     def get_users(self):
-        '''
+        """
         Extracts all users in the database.
 
         :return: list of Users of the database. 
         None is returned if the database has no users.
-        '''
+        """
         #Create the SQL Statement for retrieving the users
         query = 'SELECT * FROM User'
         #Activate foreign key support
@@ -683,7 +678,7 @@ class Connection(object):
         return users
 
     def create_user(self, user):
-        '''
+        """
         Create a new user in the database.
 
         :param dict user: a dictionary for user with the information to be created. The
@@ -716,7 +711,7 @@ class Connection(object):
 
         :return: True when user is created 
         :raise ValueError: if the user argument is not well formed.
-        '''
+        """
         
         #SQL Statement to create the row in  users table
         #SQL Statement to check if the user already exists using email
@@ -761,7 +756,7 @@ class Connection(object):
             return None
 
     def modify_user(self, user_id, user):
-        '''
+        """
         Modify the information of a user.
 
         :param user_id: The id of the user. 
@@ -794,12 +789,7 @@ class Connection(object):
 
         :return: True when user is modified or False is the user_id does not exist
         :raise ValueError: if the user argument is not well formed.     
-        '''
-        #Extracts the int which is the id for a user in the database
-        match = re.match('user-(\d{1,3})', user_id)
-        if match is None:
-            raise ValueError("The userid is malformed")
-        user_id = int(match.group(1))
+        """
         #Create the SQL Statements
         #SQL Statement for extracting the User using user_id
         query1 = 'SELECT * from User WHERE user_id = ?'
@@ -840,7 +830,7 @@ class Connection(object):
             return True
 
     def delete_user(self, user_id):
-        '''
+        """
         Remove all user information of the user with the user_id passed in as
         argument.
 
@@ -850,12 +840,7 @@ class Connection(object):
         :return: True if the user is deleted, False otherwise.
         :raise ValueError: if the user argument is not well formed.
         
-        '''
-        #Extracts the int which is the id for a user in the database
-        match = re.match('user-(\d{1,3})', user_id)
-        if match is None:
-            raise ValueError("The userid is malformed")
-        user_id = int(match.group(1))
+        """
         #Create the SQL Statements
           #SQL Statement for deleting the user information
         query = 'DELETE FROM User WHERE user_id = ?'
@@ -874,16 +859,16 @@ class Connection(object):
         return True
 
     def contains_user(self, user_id):
-        '''
+        """
         :param user_id: The id of the user. 
                         The user_id is a string with format ``user-\d{1,3}``.
         :return: True if the user is in the database. False otherwise
-        '''
+        """
         return self.get_user(user_id) is not None
 
     #TemplateFlight Table API
     def get_template_flight(self, tflight_id):
-        '''
+        """
         Extracts all the information of a templateflight from the database.
 
         :param tflight_id: The id of the templateflight. 
@@ -891,12 +876,7 @@ class Connection(object):
         :return: dictionary with the format provided in the method:
             :py:meth:`_create_template_flight_object`
         :raise ValueError: if the tflight_id is not well formed.
-        '''
-        #Extracts the int which is the id for a templateflight in the database
-        match = re.match('search-(\d{1,3})', tflight_id)
-        if match is None:
-            raise ValueError("The templateflightid is malformed")
-        tflight_id = int(match.group(1))
+        """
 
         #SQL Statement for retrieving the template information for given tflight_id
         query = 'SELECT * from TemplateFlight WHERE tflight_id = ?'
@@ -914,12 +894,12 @@ class Connection(object):
         #Process the response. Only one posible row is expected.
         row = cur.fetchone()
         if row is None:
-            return False 
+            return None
         else:
             return self._create_template_flight_object(row)
 
     def create_template_flight(self, templateflight):
-        '''
+        """
         Create a new templateflight in the database.
 
         :param dict user: a dictionary for a templateflight with the information to be created. The
@@ -944,7 +924,7 @@ class Connection(object):
 
         :return: True when templateflight is created 
         :raise ValueError: if the templateflight argument is not well formed.
-        '''
+        """
         query1 = 'SELECT * from TemplateFlight WHERE tflight_id = ?'
         query2 = 'INSERT INTO TemplateFlight (tflight_id, depTime, arrTime, origin, destination)\
                   VALUES(?,?,?,?,?)'
@@ -980,7 +960,7 @@ class Connection(object):
             return None
 
     def modify_template_flight(self, tflight_id, templateflight):
-        '''
+        """
         Modify the information of a templateflight.
 
         :param tflight_id: The id of the templateflight. 
@@ -1007,12 +987,7 @@ class Connection(object):
 
         :return: True when templateflight is modified or False is the tflight_id does not exist
         :raise ValueError: if the templateflight argument is not well formed.     
-        '''
-        #Extracts the int which is the id for a templateflight in the database
-        match = re.match('search-(\d{1,3})', tflight_id)
-        if match is None:
-            raise ValueError("The templateflightid is malformed")
-        tflight_id = int(match.group(1))
+        """
         #SQL statement for template flight existence and modifications
         query1 = 'SELECT * from TemplateFlight WHERE tflight_id = ?'
            
@@ -1047,7 +1022,7 @@ class Connection(object):
             return True
 
     def delete_template_flight(self, tflight_id):
-        '''
+        """
         Remove all templateflight information with the tflight_id passed in as
         argument.
 
@@ -1056,12 +1031,8 @@ class Connection(object):
 
         :return: True if the template flight is deleted, False otherwise.
         :raise ValueError: if the tflight_id is not well formed.
-        '''
-        #Extracts the int which is the id for a templateflight in the database
-        match = re.match('search-(\d{1,3})', tflight_id)
-        if match is None:
-            raise ValueError("The templateflightid is malformed")
-        tflight_id = int(match.group(1))
+        """
+
         #Create the SQL Statements
         #SQL Statement for deleting template flight information
         query = 'DELETE FROM TemplateFlight WHERE tflight_id = ?'
@@ -1080,16 +1051,16 @@ class Connection(object):
         return True
 
     def contains_template_flight(self, tflight_id):
-        '''
+        """
         :param tflight_id: The id of the templateflight. 
                         The tflight_id is a string with format ``search-\d{1,4}``.
         :return: True if the templateflight is in the database. False otherwise
-        '''
+        """
         return self.get_template_flight(tflight_id) is not None
 
     #Flight Table API
     def get_flight(self, flight_id):
-        '''
+        """
         Extracts all the information of a flight from the database using flight_id.
 
         :param flight_id: The id of the flight. 
@@ -1097,12 +1068,7 @@ class Connection(object):
         :return: dictionary with the format provided in the method:
             :py:meth:`_create_flight_object`
         :raise ValueError: if the flight_id is not well formed.
-        '''
-        #Extracts the int which is the id for a flight in the database
-        match = re.match('fl-(\d{1,4})', flight_id)
-        if match is None:
-            raise ValueError("The flightid is malformed")
-        flight_id = int(match.group(1))
+        """
         #SQL Statement for retrieving the flight information for given flight_id
         query = 'SELECT * from Flight WHERE flight_id = ?'
     
@@ -1119,24 +1085,19 @@ class Connection(object):
         #Process the response. Only one posible row is expected.
         row = cur.fetchone()
         if row is None:
-            return False 
+            return None
         else:
             return self._create_flight_object(row)
 
     def get_flights_by_template(self, template_id):
-        '''
+        """
         Extracts all the information of flights from the database using template_id.
 
         :param template_id: The id of the templateflight. 
                         The template_id is a string with format ``result-\d{1,4}``.
         :return: dictionary with the format provided in the method:
             :py:meth:`_create_flight_object`
-        '''
-        #Extracts the int which is the id for a templateflight in the database
-        match = re.match('result-(\d{1,4})', template_id)
-        if match is None:
-            raise ValueError("The templateflightid is malformed")
-        template_id = int(match.group(1))
+        """
         #SQL Statement for retrieving the flights information for given templateid
         query = 'SELECT * from Flight WHERE template_id = ?'
     
@@ -1161,7 +1122,7 @@ class Connection(object):
 
 
     def create_flight(self, flight):
-        '''
+        """
         Create a new flight in the database.
 
         :param dict flight: a dictionary for flight with the information to be created. The
@@ -1195,7 +1156,7 @@ class Connection(object):
         :return: True when flight is created 
         :raise ValueError: if the flight argument is not well formed.
         
-        '''
+        """
 
         query1 = 'SELECT * from Flight WHERE flight_id = ?'
         query2 = 'INSERT INTO Flight (flight_id, code, price, gate, depDate, arrDate, nbInitialSeats, nbSeatsLeft, template_id)\
@@ -1228,14 +1189,17 @@ class Connection(object):
         if row is None:
             # Execute the statement
             pvalue = (flight_id, code, price, gate, depDate, arrDate, nbInitialSeats, nbSeatsLeft, template_id)
-            cur.execute(query2, pvalue)
+            try:
+                cur.execute(query2, pvalue)
+            except sqlite3.IntegrityError:
+                return None
             self.con.commit()
             return cur.lastrowid
         else:
             return None
 
     def modify_flight(self, flight_id, flight):
-        '''
+        """
         Modify the information of a flight.
 
         :param flight_id: The id of the flight. 
@@ -1268,12 +1232,7 @@ class Connection(object):
 
         :return: True when flight is modified or False is the flight_id does not exist
         :raise ValueError: if the flight argument is not well formed.     
-        '''
-        #Extracts the int which is the id for a flight in the database
-        match = re.match('search-(\d{1,4})', flight_id)
-        if match is None:
-            raise ValueError("The flightid is malformed")
-        flight_id = int(match.group(1))
+        """
         query1 = 'SELECT * from Flight WHERE flight_id = ?'
            
         query2 = 'UPDATE Flight SET code = ?, price = ?, gate = ?, depDate = ?, \
@@ -1312,7 +1271,7 @@ class Connection(object):
             return True
 
     def delete_flight(self, flight_id):
-        '''
+        """
         Remove all flight information of a flight with the flight_id passed in as
         argument.
 
@@ -1320,12 +1279,7 @@ class Connection(object):
                         The tflight_id is a string with format ``fl\d{1,4}``.
         :return: True if the flight is deleted, False otherwise.
         :raise ValueError: if the flight_id is not well formed.
-        '''
-        #Extracts the int which is the id for a flight in the database
-        match = re.match('search-(\d{1,4})', flight_id)
-        if match is None:
-            raise ValueError("The flightid is malformed")
-        flight_id = int(match.group(1))
+        """
         #Create the SQL Statements
           #SQL Statement for deleting a flight information
         query = 'DELETE FROM Flight WHERE flight_id = ?'
@@ -1344,16 +1298,16 @@ class Connection(object):
         return True
 
     def contains_flight(self, flight_id):
-        '''
+        """
         :param flight_id: The id of the flight. 
                         The flight_id is a string with format ``fl-\d{1,4}``.
         :return: True if the flight is in the database. False otherwise
-        '''
+        """
         return self.get_flight(flight_id) is not None
 
     #Reservation Table API
     def get_reservation(self, reservation_id):
-        '''
+        """
         Extracts all the information of a reservation from the database.
 
         :param reservation_id: The id of the reservation. 
@@ -1361,12 +1315,7 @@ class Connection(object):
         :return: dictionary with the format provided in the method:
             :py:meth:`_create_reservation_object`
         :raise ValueError: if the reservation_id is not well formed.
-        '''
-        #Extracts the int which is the id for a reservation in the database
-        match = re.match('res-(\d{1,2})', reservation_id)
-        if match is None:
-            raise ValueError("The reservationid is malformed")
-        reservation_id = int(match.group(1))
+        """
         #Create the SQL Statements for retrieving information of a reservation
         query = 'SELECT * FROM Reservation WHERE reservation_id = ?'
         #Activate foreign key support
@@ -1381,17 +1330,17 @@ class Connection(object):
         self.con.commit()
         row = cur.fetchone()
         if row is None:
-            return False 
+            return None
         else:
             return self._create_reservation_object(row)
 
     def get_reservation_list(self):
-        '''
+        """
         Extracts all the information of the reservations from the database.
 
         :return: dictionary with the format provided in the method:
             :py:meth:`_create_reservation_object`
-        '''
+        """
         #Create the SQL Statements for retrieving information of the reservations
         query = 'SELECT * FROM Reservation'
         #Activate foreign key support
@@ -1411,7 +1360,7 @@ class Connection(object):
         return reservations
 
     def get_reservations_by_user(self, creator_id):
-        '''
+        """
 
         Extracts all the information of a reservation from the database of a particular user.
 
@@ -1420,12 +1369,7 @@ class Connection(object):
         :return: dictionary with the format provided in the method:
             :py:meth:`_create_reservation_object`
         :raise ValueError: if the creator_id is not well formed.
-        '''
-        #Extracts the int which is the id for the creator of reservation in the database
-        match = re.match('bookedby-(\d{1,3})', creator_id)
-        if match is None:
-            raise ValueError("The creatorid is malformed")
-        creator_id = int(match.group(1))
+        """
         #Create the SQL Statements for retrieving information of the reservations
         query = 'SELECT * FROM Reservation WHERE creator_id = ?'
         #Activate foreign key support
@@ -1447,7 +1391,7 @@ class Connection(object):
         return reservations_user
 
     def get_reservations_by_flight(self, flight_id):
-        '''
+        """
         Extracts all the information of a reservation from the database of a particular flight.
 
         :param flight_id: The id of the flight. 
@@ -1455,12 +1399,7 @@ class Connection(object):
         :return: dictionary with the format provided in the method:
             :py:meth:`_create_reservation_object`
         :raise ValueError: if the flight_id is not well formed.
-        '''
-        #Extracts the int which is the id for a flight in the database
-        match = re.match('fl-(\d{1,2})', reservation_id)
-        if match is None:
-            raise ValueError("The flightid is malformed")
-        flight_id = int(match.group(1))
+        """
         #Create the SQL Statements for retrieving information of the reservations
         query = 'SELECT * FROM Reservation WHERE flight_id = ?'
         #Activate foreign key support
@@ -1482,7 +1421,7 @@ class Connection(object):
         return reservations_flight
 
     def create_reservation(self, reservation):
-        '''
+        """
         Create a new reservation in the database.
 
         :param dict reservation: a dictionary for reservation with the information to be created. The
@@ -1508,7 +1447,7 @@ class Connection(object):
         :return: True when reservation is created 
         :raise ValueError: if the reservation argument is not well formed.
         
-        '''
+        """
         #SQL Statement to create the row in  Reservation table
 
         query1 = 'SELECT * from Reservation WHERE reservation_id = ?'
@@ -1538,15 +1477,20 @@ class Connection(object):
         if row is None:
             #Add the row in 
             # Execute the statement
+            timestamp = strftime("%Y-%m-%d", gmtime())
             pvalue = (reservation_id, reference, timestamp, creator_id, flight_id)
-            cur.execute(query2, pvalue)
+            try:
+                cur.execute(query2, pvalue)
+            except sqlite3.IntegrityError:
+                return None
+
             self.con.commit()
             return cur.lastrowid
         else:
             return None
 
     def modify_reservation(self, reservationid,reference, userid, flightid):
-        '''
+        """
         Modify the information of a reservation.
 
         :param str reservationid: The reservationid is a string with format ``res-\d{1,2}``.
@@ -1564,22 +1508,7 @@ class Connection(object):
 
         :return: True when reservation is modified or False is the reservationid does not exist
         :raise ValueError: if the reservationid, userid and/or flightid are not well formed.
-        '''
-        #Extracts the int which is the id for a reservation in the database
-        match = re.match('res-(\d{1,2})', reservationid)
-        if match is None:
-            raise ValueError("The reservationid is malformed")
-        reservationid = int(match.group(1))
-        #Extracts the int which is the id for a user in the database
-        match = re.match('bookedby-(\d{1,3})', userid)
-        if match is None:
-            raise ValueError("The userid is malformed")
-        userid = int(match.group(1))
-        #Extracts the int which is the id for a flight in the database
-        match = re.match('res-(\d{1,2})', flightid)
-        if match is None:
-            raise ValueError("The flightid is malformed")
-        flightid = int(match.group(1))
+        """
 
         query1 = 'SELECT * from Reservation WHERE reservation_id = ?'
            
@@ -1614,7 +1543,7 @@ class Connection(object):
             return True
 
     def delete_reservation(self, reservation_id):
-        '''
+        """
         Remove all reservation information of a reservation with the reservation_id passed in as
         argument.
 
@@ -1622,12 +1551,7 @@ class Connection(object):
 
         :return: True if the reservation is deleted, False otherwise.
         :raise ValueError: if the reservation_id is not well formed.
-        '''
-        #Extracts the int which is the id for a reservation in the database
-        match = re.match('res-(\d{1,2})', reservation_id)
-        if match is None:
-            raise ValueError("The reservationid is malformed")
-        reservation_id = int(match.group(1))
+        """
         #Create the SQL Statements
           #SQL Statement for deleting a reservation information
         query = 'DELETE FROM Reservation WHERE reservation_id = ?'
@@ -1646,16 +1570,16 @@ class Connection(object):
         return True
 
     def contains_reservation(self, reservation_id):
-        '''
+        """
         :param reservation_id: The id of the reservation. 
                         The reservation_id is a string with format ``res-\d{1,2}``.
         :return: True if the reservation is in the database. False otherwise
-        '''
+        """
         return self.get_reservation(reservation_id) is not None
 
     #Ticket Table API
     def get_ticket(self, ticket_id):
-        '''
+        """
         Extracts all the information of a ticket from the database.
 
         :param ticket_id: The id of the ticket. 
@@ -1664,12 +1588,7 @@ class Connection(object):
             :py:meth:`_create_ticket_object`
 
         :raise ValueError: if the ticket_id is not well formed.
-        '''
-        #Extracts the int which is the id for a ticket in the database
-        match = re.match('ticketnum-(\d{1,2})', ticket_id)
-        if match is None:
-            raise ValueError("The ticketid is malformed")
-        ticket_id = int(match.group(1))
+        """
         #SQL Statement for retrieving the ticket information for given ticketid
         query = 'SELECT * FROM Ticket WHERE ticket_id = ?'
         #Activate foreign key support
@@ -1684,18 +1603,18 @@ class Connection(object):
         row = cur.fetchone()
         #Process the response. 
         if row is None:
-            return False 
+            return None
         else:
             return self._create_ticket_object(row)
 
      
     def get_tickets(self):
-        '''
+        """
         Extracts all the information of the tickets from the database.
 
         :return: dictionary with the format provided in the method:
             :py:meth:`_create_ticket_object`
-        '''
+        """
         #SQL Statement for retrieving the ticket information
         query = 'SELECT * FROM Ticket'
         #Activate foreign key support
@@ -1715,7 +1634,7 @@ class Connection(object):
         return tickets
 
     def get_tickets_by_reservation(self, reservation_id):
-        '''
+        """
         Extracts all the information of a ticket from the database of a particular reservation.
 
         :param reservation_id: The id of the reservation. 
@@ -1723,12 +1642,7 @@ class Connection(object):
         :return: dictionary with the format provided in the method:
             :py:meth:`_create_ticket_object`
         :raise ValueError: if the reservation_id is not well formed.
-        '''
-        #Extracts the int which is the id for a reservation in the database
-        match = re.match('res-(\d{1,2})', reservation_id)
-        if match is None:
-            raise ValueError("The reservationid is malformed")
-        reservation_id = int(match.group(1))
+        """
 
         #SQL Statement for retrieving the ticket information for given reservationid
         query = 'SELECT * from Ticket WHERE reservation_id = ?'
@@ -1745,7 +1659,7 @@ class Connection(object):
         #Process the response. 
         rows = cur.fetchall()
         if rows is None:
-            return False 
+            return None
         else:
             tickets = []
             for row in rows:
@@ -1754,13 +1668,11 @@ class Connection(object):
 
 
     def create_ticket(self, ticket):
-        '''
+        """
         Create a new ticket in the database.
 
         :param dict ticket: a dictionary for user with the information to be created. The
                 dictionary has the following structure:
-
-                .. code-block:: javascript
 
                     ticket = {'ticketnumber': ticket_id,
                                 'reservationid': reservation_id,
@@ -1779,8 +1691,8 @@ class Connection(object):
        
         Note that all values are string if they are not otherwise indicated.
 
-        :return: True when ticket is created 
-        '''
+        :return: None if the ticket can not be created; the id of the new ticket otherwise
+        """
         query1 = 'SELECT * from Ticket WHERE ticket_id = ?'
         query2 = 'SELECT flight_id from Reservation WHERE reservation_id = ?'
         query3 = 'SELECT nbSeatsLeft, nbInitialSeats from Flight WHERE flight_id = ?'
@@ -1827,16 +1739,17 @@ class Connection(object):
             pvalue = (ticket_id, firstName, lastName, gender, age, reservation_id, seat)
             cur.execute(query, pvalue)
             self.con.commit()
-            print(cur.lastrowid)
+            new_ticket_id = cur.lastrowid
             nbSeatsLeft = nbSeatsLeft - 1
             pvalue =(nbSeatsLeft, flight_id,)
             cur.execute(query4, pvalue)
+            return new_ticket_id
 
         else:
             return None
 
     def modify_ticket(self, ticket_id, ticket):
-        '''
+        """
         Modify the information of a ticket.
 
         :param ticket_id: The id of the ticket. 
@@ -1865,28 +1778,15 @@ class Connection(object):
 
         :return: True when ticket is modified or False is the ticket_id does not exist
         :raise ValueError: if the ticket_id is not well formed.
-        '''
+        """
 
         query1 = 'SELECT * from Ticket WHERE ticket_id = ?'
            
         query2 = 'UPDATE Ticket SET firstName = ?, lastName = ?, gender = ? ,\
                                         age = ?, reservation_id = ? \
-                                           WHERE ticket_id = ?' 
-        #temporal variables
-        ticket_id = ticket.get('ticketnumber', None)
-        #Extracts the int which is the id for a ticket in the database
-        match = re.match('ticketnum-(\d{1,2})', ticket_id)
-        if match is None:
-            raise ValueError("The ticketid is malformed")
-        ticket_id = int(match.group(1))
+                                           WHERE ticket_id = ?'
 
         reservation_id = ticket.get('reservationid', None)
-        #Extracts the int which is the id for a reservation in the database
-        match = re.match('ticketnum-(\d{1,2})', reservation_id)
-        if match is None:
-            raise ValueError("The reservationid is malformed")
-        reservation_id = int(match.group(1))
-
         firstName = ticket.get('firstname', None)
         lastName = ticket.get('lastname', None)
         gender = ticket.get('gender', None)
@@ -1906,7 +1806,7 @@ class Connection(object):
             return False
         else:
             #execute the main statement
-            pvalue = (firstName, lastName, gender, age, reservation_id, seat, ticket_id,)
+            pvalue = (firstName, lastName, gender, age, reservation_id, ticket_id,)
             cur.execute(query2, pvalue)
             self.con.commit()
             #Check that if ticket is modified
@@ -1915,7 +1815,7 @@ class Connection(object):
             return True
 
     def delete_ticket(self, ticket_id):
-        '''
+        """
         Remove all ticket information of the ticket with the ticket_id passed in as
         argument.
 
@@ -1923,12 +1823,7 @@ class Connection(object):
                         The ticket_id is a string with format ``ticketnum-\d{1,4}``.
         :return: True if the ticket is deleted, False otherwise.
         :raise ValueError: if the ticket_id is not well formed.
-        '''
-        #Extracts the int which is the id for a ticket in the database
-        match = re.match('ticketnum-(\d{1,4})', ticket_id)
-        if match is None:
-            raise ValueError("The ticketid is malformed")
-        ticket_id = int(match.group(1))
+        """
         #Create the SQL Statements
           #SQL Statement for deleting the ticket information
         query = 'DELETE FROM Ticket WHERE ticket_id = ?'
@@ -1947,11 +1842,11 @@ class Connection(object):
         return True
 
     def contains_ticket(self, ticket_id):
-        '''
+        """
         :param ticket_id: The id of the ticket. 
                         The ticket_id is a string with format ``ticketnum-\d{1,4}``.
         :return: True if the ticket is in the database. False otherwise
-        '''
+        """
         return self.get_ticket(ticket_id) is not None
     
     
