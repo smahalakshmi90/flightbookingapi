@@ -1767,8 +1767,7 @@ class Connection(object):
                                 'firstname': firstname,
                                 'lastname': lastname,
                                 'gender': gender,
-                                'age':age,
-                                'seat':seat}
+                                'age':age}
                     
             where:
             * ``ticketnumber``: user id for an user (INT)
@@ -1777,14 +1776,16 @@ class Connection(object):
             * ``firstname``: firstname of the passenger (TEXT)
             * ``gender``: passenger's gender (TEXT)
             * ``age``: passenger's age(INT)
-            * ``seat``: seatnumber (INT)
+       
         Note that all values are string if they are not otherwise indicated.
 
         :return: True when ticket is created 
         '''
         query1 = 'SELECT * from Ticket WHERE ticket_id = ?'
-
-        query2 = 'INSERT INTO Ticket (ticket_id, firstName, lastName, gender, age, reservation_id, seat )\
+        query2 = 'SELECT flight_id from Reservation WHERE reservation_id = ?'
+        query3 = 'SELECT nbSeatsLeft, nbInitialSeats from Flight WHERE flight_id = ?'
+        query4 = 'UPDATE Flight SET nbSeatsLeft = ? WHERE flight_id = ?'
+        query = 'INSERT INTO Ticket (ticket_id, firstName, lastName, gender, age, reservation_id, seat )\
                   VALUES(?,?,?,?,?,?,?)'
     
         ticket_id = ticket.get('ticketnumber', None)
@@ -1793,8 +1794,7 @@ class Connection(object):
         lastName = ticket.get('lastname', None)
         gender = ticket.get('gender', None)
         age = ticket.get('age', None)
-        seat = ticket.get('seat', None)
-
+        
         #Activate foreign key support
         self.set_foreign_keys_support()
         #Cursor and row initialization
@@ -1804,16 +1804,34 @@ class Connection(object):
         #Execute the statement to check if the ticket already exists
         pvalue =(ticket_id,)
         cur.execute(query1, pvalue) 
-          
+        
         #No value expected 
         row = cur.fetchone()
         #If there is no ticket add rows in Ticket
         if row is None:
+            pvalue =(reservation_id,)
+            cur.execute(query2, pvalue)
+            res_row = cur.fetchone()
+            if res_row is None:
+                return None
+            flight_id = res_row['flight_id']
+            pvalue =(flight_id,)
+            cur.execute(query3, pvalue)
+            flight_row = cur.fetchone()
+            if flight_row is None:
+                return None
+            nbInitialSeats = flight_row['nbInitialSeats']
+            nbSeatsLeft = flight_row['nbSeatsLeft']
+            seat = nbInitialSeats - nbSeatsLeft + 1
             # Execute the statement
             pvalue = (ticket_id, firstName, lastName, gender, age, reservation_id, seat)
-            cur.execute(query2, pvalue)
+            cur.execute(query, pvalue)
             self.con.commit()
-            return cur.lastrowid
+            print(cur.lastrowid)
+            nbSeatsLeft = nbSeatsLeft - 1
+            pvalue =(nbSeatsLeft, flight_id,)
+            cur.execute(query4, pvalue)
+
         else:
             return None
 
@@ -1833,8 +1851,7 @@ class Connection(object):
                                 'firstname': firstname,
                                 'lastname': lastname,
                                 'gender': gender,
-                                'age':age,
-                                'seat':seat}
+                                'age':age}
                    
             where:
             * ``reservationid``: reservation id of a reservation 
@@ -1843,7 +1860,7 @@ class Connection(object):
             * ``firstname``: firstname of the passenger (TEXT)
             * ``gender``: passenger's gender (TEXT)
             * ``age``: passenger's age(INT)
-            * ``seat``: seatnumber (INT)
+    
         Note that all values are string if they are not otherwise indicated.
 
         :return: True when ticket is modified or False is the ticket_id does not exist
@@ -1853,7 +1870,7 @@ class Connection(object):
         query1 = 'SELECT * from Ticket WHERE ticket_id = ?'
            
         query2 = 'UPDATE Ticket SET firstName = ?, lastName = ?, gender = ? ,\
-                                        age = ?, reservation_id = ?, seat = ? \
+                                        age = ?, reservation_id = ? \
                                            WHERE ticket_id = ?' 
         #temporal variables
         ticket_id = ticket.get('ticketnumber', None)
@@ -1874,7 +1891,6 @@ class Connection(object):
         lastName = ticket.get('lastname', None)
         gender = ticket.get('gender', None)
         age = ticket.get('age', None)
-        seat = ticket.get('seat', None)
         #Activate foreign key support
         self.set_foreign_keys_support()
         #Cursor and row initialization
