@@ -233,9 +233,9 @@ class TicketDBAPITestCase(unittest.TestCase):
         tickets = self.connection.get_tickets()
         for ticket in tickets:
             if ticket["ticketnumber"] == TICKETID_1010:
-                self.assertDictContainsSubset(ticket, TICKETID_1010)
+                self.assertDictContainsSubset(TICKET_1010, ticket)
             elif ticket["ticketnumber"] == TICKETID_1040:
-                self.assertDictContainsSubset(TICKETID_1040, ticket)
+                self.assertDictContainsSubset(TICKET_1040, ticket)
 
 
     def test_get_tickets_by_reservation(self):
@@ -254,9 +254,9 @@ class TicketDBAPITestCase(unittest.TestCase):
         # Check that tickets info are correct
         for ticket in tickets:
             if ticket["ticketnumber"] == TICKETID_1010:
-                self.assertSequenceEqual(ticket, TICKET_1010)
+                self.assertDictContainsSubset(TICKET_1010, ticket)
             elif ticket["ticketnumber"] == TICKETID_1020:
-                self.assertSequenceEqual(ticket, TICKET_1020)
+                self.assertDictContainsSubset(TICKET_1020, ticket)
 
     def test_get_tickets_by_nonexisting_reservation(self):
         """

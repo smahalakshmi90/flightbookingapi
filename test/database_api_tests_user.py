@@ -46,6 +46,13 @@ MODIFIED_USER1 = {
     'registrationDate': 1519423463929,
 }
 
+USER1_LIST_OBJECT = {
+    'userid': 1,
+    'lastname': 'Tilton',
+    'firstname': 'John',
+    'registrationdate': 1519423463929,
+}
+
 USER2_ID = 2
 USER2 = {
     'lastname': 'Sam',
@@ -64,6 +71,13 @@ MODIFIED_USER2 = {
     'dateofBirth': '2000-01-01',
     'gender': 'Male',
     'registrationDate': 1519423463929,
+}
+
+USER2_LIST_OBJECT = {
+    'userid': 2,
+    'lastname': 'Sam',
+    'firstname': 'Jacob',
+    'registrationdate': 1519423463929,
 }
 
 NEW_USER = {
@@ -230,9 +244,9 @@ class UserDBAPITestCase(unittest.TestCase):
         #USER2_ID are correct:
         for user in users:
             if user['userid'] == USER1_ID:
-                self.assertDictContainsSubset(USER1, user)
+                self.assertDictContainsSubset(USER1_LIST_OBJECT, user)
             elif user['userid'] == USER2_ID:
-                self.assertDictContainsSubset(USER2, user)
+                self.assertDictContainsSubset(USER2_LIST_OBJECT, user)
 
     def test_delete_user(self):
         """

@@ -33,10 +33,22 @@ RESERVATION1 = {
     'flightid': 1111
 }
 
+RESERVATION1_LIST_OBJECT = {
+    'reference': 'AB12CS',
+    'userid': 1,
+    'flightid': 1111
+}
+
 RESERVATION2_ID = 22
 RESERVATION2 = {
     'reference': 'HJJJHW',
     'reservationdate': '2018-02-28',
+    'userid': 2,
+    'flightid': 1122
+}
+
+RESERVATION2_LIST_OBJECT = {
+    'reference': 'HJJJHW',
     'userid': 2,
     'flightid': 1122
 }
@@ -240,13 +252,13 @@ class ReservationDBAPITestCase(unittest.TestCase):
         reservations = self.connection.get_reservations_by_flight(FLIGHTID_RES_11)
         for reservation in reservations:
             if reservation["reservationid"] == 11:
-                self.assertDictContainsSubset(RESERVATION1, reservation)
+                self.assertDictContainsSubset(RESERVATION1_LIST_OBJECT, reservation)
 
         # Reservations for flight 1122
         reservations = self.connection.get_reservations_by_flight(FLIGHTID_RES_22)
         for reservation in reservations:
             if reservation["reservationid"] == 22:
-                self.assertDictContainsSubset(RESERVATION2, reservation)
+                self.assertDictContainsSubset(RESERVATION2_LIST_OBJECT, reservation)
 
     def test_get_reservations_nonexisting_flight(self):
         """

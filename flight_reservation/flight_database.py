@@ -427,7 +427,7 @@ class Connection(object):
             otherwise stated.
 
         """
-        userid = 'user-' + str(row['user_id']) 
+        userid = row['user_id']
         lastname =row['lastName']
         firstname = row['firstName']
         phonenumber = row['phoneNumber'] 
@@ -466,7 +466,7 @@ class Connection(object):
             otherwise stated.
 
         """
-        return { 'userid': 'user-' + str(row['user_id']),
+        return { 'userid': row['user_id'],
                 'firstname': row['firstName'],
                 'lastname': row['lastName'],
                 'registrationdate': row['registrationDate']}
@@ -500,6 +500,36 @@ class Connection(object):
                        'reference': reference,
                        'reservationdate' : reservation_date,
                        'userid' : creator_id,
+                       'flightid': flight_id}
+        return reservation
+
+
+    def _create_reservation_list_object(self, row):
+        """
+        It takes a database Row and transform it into a python dictionary.
+        The resulting dictionary is targeted to build reservations in a list.
+
+        :param row: The row obtained from the database.
+        :type row: sqlite3.Row
+        :return: a dictionary containing the following keys:
+
+            * ``userid``: user id for a user (INT)
+            * ``lastname``: lastname of the user (TEXT)
+            * ``firstname``: firstname of the user (TEXT)
+            * ``registrationDate``: date of user registration (INT)
+
+
+            Note that all values in the returned dictionary are string unless
+            otherwise stated.
+
+        """
+        reservation_id = row['reservation_id']
+        reference = row['reference']
+        creator_id = row['creator_id']
+        flight_id = row['flight_id']
+        reservation = {'reservationid': reservation_id,
+                       'reference': reference,
+                       'userid': creator_id,
                        'flightid': flight_id}
         return reservation
 
@@ -603,7 +633,7 @@ class Connection(object):
             Note that all values in the returned dictionary are string unless
             otherwise stated.
         """
-        ticket_id ='ticketnum-' + str( row['ticket_id'])
+        ticket_id = row['ticket_id']
         reservation_id = row['reservation_id']
         firstname = row['firstName']
         lastname =row['lastName']

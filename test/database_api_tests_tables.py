@@ -106,7 +106,7 @@ class CreatedTablesTestCase(unittest.TestCase):
             real_names = ['user_id', 'lastName', 'firstName', 'phoneNumber', 'email', 'birthDate',
                           'gender', 'registrationDate']
             # List of types expected
-            real_types = ['INTEGER', 'TEXT', 'TEXT', 'TEXT', 'TEXT', 'INTEGER', 'TEXT', 'INTEGER']
+            real_types = ['INTEGER', 'TEXT', 'TEXT', 'TEXT', 'TEXT', 'TEXT', 'TEXT', 'INTEGER']
 
             # Check the equality between names / types got and expected values
             self.assertEqual(names, real_names)
@@ -146,7 +146,7 @@ class CreatedTablesTestCase(unittest.TestCase):
             # List of names expected
             real_names = ['reservation_id', 'reference', 're_date', 'creator_id', 'flight_id']
             # List of types expected
-            real_types = ['INTEGER', 'TEXT', 'INTEGER', 'INTEGER', 'INTEGER']
+            real_types = ['INTEGER', 'TEXT', 'TEXT', 'INTEGER', 'INTEGER']
 
             # Check the equality between names / types got and expected values
             self.assertEqual(names, real_names)
@@ -243,7 +243,7 @@ class CreatedTablesTestCase(unittest.TestCase):
             real_names = ['flight_id', 'code', 'price', 'gate', 'depDate', 'arrDate', 'nbInitialSeats',
                           'nbSeatsLeft', 'template_id']
             # List of types expected
-            real_types = ['INTEGER', 'TEXT', 'INTEGER', 'TEXT', 'INTEGER', 'INTEGER', 'INTEGER', 'INTEGER', 'INTEGER']
+            real_types = ['INTEGER', 'TEXT', 'INTEGER', 'TEXT', 'TEXT', 'TEXT', 'INTEGER', 'INTEGER', 'INTEGER']
 
             # Check the equality between names / types got and expected values
             self.assertEqual(names, real_names)
@@ -291,7 +291,7 @@ class CreatedTablesTestCase(unittest.TestCase):
             # List of names expected
             real_names = ['tflight_id', 'depTime', 'arrTime', 'origin', 'destination']
             # List of types expected
-            real_types = ['INTEGER', 'INTEGER', 'INTEGER', 'TEXT', 'TEXT']
+            real_types = ['INTEGER', 'TEXT', 'TEXT', 'TEXT', 'TEXT']
 
             # Check the equality between names / types got and expected values
             self.assertEqual(names, real_names)
