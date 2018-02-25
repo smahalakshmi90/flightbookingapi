@@ -74,6 +74,25 @@ NEW_USER = {
     'dateofBirth': '1996-07-28',
     'gender': 'Male',
 }
+
+NEW_USER_TOO_YOUNG = {
+    'lastname': 'Larue',
+    'firstname': 'Jules',
+    'phonenumber': '+33065837465',
+    'email': 'jules.larue@example.com',
+    'dateofBirth': '2017-07-28',
+    'gender': 'Male',
+}
+
+MODIFIED_USER1_TOO_YOUNG = {
+    'lastname': 'Watt',
+    'firstname': 'James',
+    'phonenumber': '+44 871 222 3330',
+    'email': 'james.watt@example.com',
+    'dateofBirth': '2015-04-12',
+    'gender': 'male',
+    'registrationDate': 1519423463929,
+}
 NEW_USER_ID = 6
 
 USER_WRONG_ID = 100
@@ -279,6 +298,18 @@ class UserDBAPITestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.connection.create_user(modified_user_malformed_birthdate)
 
+
+    def test_modify_user_too_young(self):
+        """
+        Checks that we can not modify a user with a birthdate
+        less than 18 years old
+        """
+        print('(' + self.test_modify_user_too_young.__name__ + ')', \
+              self.test_modify_user_too_young.__doc__)
+
+        resp = self.connection.modify_user(USER1_ID, MODIFIED_USER1_TOO_YOUNG)
+        self.assertFalse(resp)
+
     def test_append_user(self):
         """
         Test that I can add a new user
@@ -314,6 +345,18 @@ class UserDBAPITestCase(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             self.connection.create_user(user_malformed_birthdate)
+
+
+    def test_append_user_too_young(self):
+        """
+        Checks that we can not append a user which is
+        too young (less than 18 years old)
+        """
+        print('(' + self.test_append_user_too_young.__name__ + ')', \
+              self.test_append_user_too_young.__doc__)
+
+        resp = self.connection.create_user(NEW_USER_TOO_YOUNG)
+        self.assertIsNone(resp)
 
 
     def test_not_contains_user(self):

@@ -734,11 +734,17 @@ class Connection(object):
         email = user.get('email', None)
         birthDate = user.get('dateofBirth', None)
         gender = user.get('gender', None)
-        registrationDate = user.get('registrationDate', None)
 
         # Check birth date format
         try:
-            datetime.strptime(birthDate, DATE_FORMAT)
+            birthDate_date = datetime.strptime(birthDate, DATE_FORMAT)
+
+            # Check that user is at least 18 years old
+            now = datetime.now()
+            user_age =  now.year - birthDate_date.year - ((now.month, now.day) < (birthDate_date.month, birthDate_date.day))
+            if user_age < 18:
+                return None
+
         except ValueError:
             raise ValueError("Birth date format is incorrect")
 
@@ -817,7 +823,15 @@ class Connection(object):
 
         # Check birth date format
         try:
-            datetime.strptime(birthDate, DATE_FORMAT)
+            birthDate_date = datetime.strptime(birthDate, DATE_FORMAT)
+
+            # Check that user is at least 18 years old
+            now = datetime.now()
+            user_age = now.year - birthDate_date.year - (
+                        (now.month, now.day) < (birthDate_date.month, birthDate_date.day))
+            if user_age < 18:
+                return False
+
         except ValueError:
             raise ValueError("Birth date format is incorrect")
 
