@@ -264,6 +264,21 @@ class UserDBAPITestCase(unittest.TestCase):
         resp = self.connection.modify_user(USER_WRONG_ID, MODIFIED_USER1)
         self.assertFalse(resp)
 
+
+    def test_modify_user_malformed_birthdate(self):
+        """
+        Checks that we can not modify a user with
+        a birthdate with an incorrect format
+        """
+        print('(' + self.test_modify_user_malformed_birthdate.__name__ + ')', \
+              self.test_modify_user_malformed_birthdate.__doc__)
+
+        modified_user_malformed_birthdate = dict(MODIFIED_USER1)
+        modified_user_malformed_birthdate["dateofBirth"] = "21-04-1996"
+
+        with self.assertRaises(ValueError):
+            self.connection.create_user(modified_user_malformed_birthdate)
+
     def test_append_user(self):
         """
         Test that I can add a new user
@@ -285,6 +300,20 @@ class UserDBAPITestCase(unittest.TestCase):
               self.test_append_user_existing_email.__doc__)
         resp = self.connection.create_user(USER1)
         self.assertIsNone(resp)
+
+    def test_append_user_malformed_birthdate(self):
+        """
+        Checks that we can not add a user with
+        a birthdate with an incorrect format
+        """
+        print('(' + self.test_append_user_malformed_birthdate.__name__ + ')', \
+              self.test_append_user_malformed_birthdate.__doc__)
+
+        user_malformed_birthdate = dict(USER1)
+        user_malformed_birthdate["dateofBirth"] = "21-04-1996"
+
+        with self.assertRaises(ValueError):
+            self.connection.create_user(user_malformed_birthdate)
 
 
     def test_not_contains_user(self):

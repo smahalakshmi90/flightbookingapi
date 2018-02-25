@@ -274,6 +274,22 @@ class FlightDBAPITestCase(unittest.TestCase):
         resp = self.connection.create_flight(NEW_FLIGHT_EXISTING_CODE)
         self.assertIsNone(resp)
 
+
+    def test_create_flight_malformed_gate(self):
+        """
+        Checks that we can not create a flight with an incorrect gate
+        """
+        print('(' + self.test_create_flight_malformed_gate.__name__ + ')', \
+              self.test_create_flight_malformed_gate.__doc__)
+
+        flight_malformed_gate = dict(FLIGHT_1111)
+        # Set incorrect gate
+        flight_malformed_gate["gate"] = "01"
+
+        with self.assertRaises(ValueError):
+            self.connection.create_flight(flight_malformed_gate)
+
+
     def test_modify_flight(self):
         """
         Checks that we can modify a flight
@@ -300,6 +316,20 @@ class FlightDBAPITestCase(unittest.TestCase):
 
         resp = self.connection.modify_flight(FLIGHT_WRONG_ID, MODIFIED_FLIGHT_1111)
         self.assertFalse(resp)
+
+    def test_modify_flight_malformed_gate(self):
+        """
+        Checks that we can not modify a flight with an incorrect gate
+        """
+        print('(' + self.test_modify_flight_malformed_gate.__name__ + ')', \
+              self.test_modify_flight_malformed_gate.__doc__)
+
+        modified_flight_malformed_gate = dict(MODIFIED_FLIGHT_1111)
+        # Set incorrect gate
+        modified_flight_malformed_gate["gate"] = "01"
+
+        with self.assertRaises(ValueError):
+            self.connection.modify_flight(FLIGHTID_1111, modified_flight_malformed_gate)
 
 
     def test_delete_flight(self):

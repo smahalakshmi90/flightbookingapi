@@ -18,6 +18,12 @@ DEFAULT_DB_PATH = "db/flight.db"
 DEFAULT_SCHEMA = "db/flight_schema.sql"
 DEFAULT_DATA_DUMP = "db/flight_data_dump.sql"
 
+# Format used for dates
+DATE_FORMAT = "%Y-%m-%d"
+
+# Format used for tome
+TIME_FORMAT = "%H:%M"
+
 class Engine(object):
 
     """
@@ -627,7 +633,6 @@ class Connection(object):
                         The user_id is a string with format ``user-\d{1,3}``.
         :return: dictionary with the format provided in the method:
             :py:meth:`_create_user_object`
-        :raise ValueError: if the user argument is not well formed.
 
         """
         #SQL Statement for retrieving the user information for given userid
@@ -709,8 +714,8 @@ class Connection(object):
 
         Note that all values are string if they are not otherwise indicated.
 
-        :return: True when user is created 
-        :raise ValueError: if the user argument is not well formed.
+        :return: True when user is created
+        :raises ValueError when the birth date is not well formed
         """
         
         #SQL Statement to create the row in  users table
@@ -731,6 +736,11 @@ class Connection(object):
         gender = user.get('gender', None)
         registrationDate = user.get('registrationDate', None)
 
+        # Check birth date format
+        try:
+            datetime.strptime(birthDate, DATE_FORMAT)
+        except ValueError:
+            raise ValueError("Birth date format is incorrect")
 
         #Activate foreign key support
         self.set_foreign_keys_support()
@@ -788,7 +798,6 @@ class Connection(object):
         Note that all values are string if they are not otherwise indicated.
 
         :return: True when user is modified or False is the user_id does not exist
-        :raise ValueError: if the user argument is not well formed.     
         """
         #Create the SQL Statements
         #SQL Statement for extracting the User using user_id
@@ -805,6 +814,12 @@ class Connection(object):
         email = user.get('email', None)
         birthDate = user.get('dateofBirth', None)
         gender = user.get('gender', None)
+
+        # Check birth date format
+        try:
+            datetime.strptime(birthDate, DATE_FORMAT)
+        except ValueError:
+            raise ValueError("Birth date format is incorrect")
 
         #Activate foreign key support
         self.set_foreign_keys_support()
@@ -838,8 +853,7 @@ class Connection(object):
                         The user_id is a string with format ``user-\d{1,3}``.
 
         :return: True if the user is deleted, False otherwise.
-        :raise ValueError: if the user argument is not well formed.
-        
+
         """
         #Create the SQL Statements
           #SQL Statement for deleting the user information
@@ -875,7 +889,6 @@ class Connection(object):
                         The tflight_id is a string with format ``search-\d{1,4}``.
         :return: dictionary with the format provided in the method:
             :py:meth:`_create_template_flight_object`
-        :raise ValueError: if the tflight_id is not well formed.
         """
 
         #SQL Statement for retrieving the template information for given tflight_id
@@ -923,7 +936,6 @@ class Connection(object):
         Note that all values are string if they are not otherwise indicated.
 
         :return: True when templateflight is created 
-        :raise ValueError: if the templateflight argument is not well formed.
         """
         query1 = 'SELECT * from TemplateFlight WHERE tflight_id = ?'
         query2 = 'INSERT INTO TemplateFlight (tflight_id, depTime, arrTime, origin, destination)\
@@ -986,7 +998,6 @@ class Connection(object):
         Note that all values are string if they are not otherwise indicated.
 
         :return: True when templateflight is modified or False is the tflight_id does not exist
-        :raise ValueError: if the templateflight argument is not well formed.     
         """
         #SQL statement for template flight existence and modifications
         query1 = 'SELECT * from TemplateFlight WHERE tflight_id = ?'
@@ -1030,7 +1041,6 @@ class Connection(object):
                         The tflight_id is a string with format ``search-\d{1,4}``.
 
         :return: True if the template flight is deleted, False otherwise.
-        :raise ValueError: if the tflight_id is not well formed.
         """
 
         #Create the SQL Statements
@@ -1067,7 +1077,6 @@ class Connection(object):
                         The flight_id is a string with format ``fl-\d{1,4}``.
         :return: dictionary with the format provided in the method:
             :py:meth:`_create_flight_object`
-        :raise ValueError: if the flight_id is not well formed.
         """
         #SQL Statement for retrieving the flight information for given flight_id
         query = 'SELECT * from Flight WHERE flight_id = ?'
@@ -1153,9 +1162,8 @@ class Connection(object):
                 * ``seatsleft``: number seats vacant (INT)
         Note that all values are string if they are not otherwise indicated.
 
-        :return: True when flight is created 
-        :raise ValueError: if the flight argument is not well formed.
-        
+        :return: True when flight is created
+        :raises ValueError when the gate name is not well formed
         """
 
         query1 = 'SELECT * from Flight WHERE flight_id = ?'
@@ -1172,6 +1180,10 @@ class Connection(object):
         arrDate = flight.get('arrivaldate', None)
         nbInitialSeats = flight.get('totalseats', None)
         nbSeatsLeft = flight.get('seatsleft', None)
+
+        gate_pattern = re.compile("GATE\d{2}")
+        if not gate_pattern.match(gate):
+            raise ValueError("Gate is not well formed")
         
         #Activate foreign key support
         self.set_foreign_keys_support()
@@ -1231,7 +1243,6 @@ class Connection(object):
         Note that all values are string if they are not otherwise indicated.
 
         :return: True when flight is modified or False is the flight_id does not exist
-        :raise ValueError: if the flight argument is not well formed.     
         """
         query1 = 'SELECT * from Flight WHERE flight_id = ?'
            
@@ -1247,6 +1258,13 @@ class Connection(object):
         arrDate = flight.get('arrivaldate', None)
         nbInitialSeats = flight.get('totalseats', None)
         nbSeatsLeft = flight.get('seatsleft', None)
+
+        # Check that gate format is incorrect
+        pattern = re.compile("GATE\d{2}")
+        if not pattern.match(gate):
+            raise ValueError("Gate format is incorrect")
+
+
         #Activate foreign key support
         self.set_foreign_keys_support()
         #Cursor and row initialization
@@ -1278,7 +1296,6 @@ class Connection(object):
         :param tflight_id: The id of the templateflight. 
                         The tflight_id is a string with format ``fl\d{1,4}``.
         :return: True if the flight is deleted, False otherwise.
-        :raise ValueError: if the flight_id is not well formed.
         """
         #Create the SQL Statements
           #SQL Statement for deleting a flight information
@@ -1314,7 +1331,6 @@ class Connection(object):
                         The reservation_id is a string with format ``res-\d{1,2}``.
         :return: dictionary with the format provided in the method:
             :py:meth:`_create_reservation_object`
-        :raise ValueError: if the reservation_id is not well formed.
         """
         #Create the SQL Statements for retrieving information of a reservation
         query = 'SELECT * FROM Reservation WHERE reservation_id = ?'
@@ -1368,7 +1384,6 @@ class Connection(object):
                         The creator_id is a string with format ``bookedby-\d{1,3}``.
         :return: dictionary with the format provided in the method:
             :py:meth:`_create_reservation_object`
-        :raise ValueError: if the creator_id is not well formed.
         """
         #Create the SQL Statements for retrieving information of the reservations
         query = 'SELECT * FROM Reservation WHERE creator_id = ?'
@@ -1398,7 +1413,6 @@ class Connection(object):
                         The flight_id is a string with format ``fl-\d{1,4}``.
         :return: dictionary with the format provided in the method:
             :py:meth:`_create_reservation_object`
-        :raise ValueError: if the flight_id is not well formed.
         """
         #Create the SQL Statements for retrieving information of the reservations
         query = 'SELECT * FROM Reservation WHERE flight_id = ?'
@@ -1444,9 +1458,7 @@ class Connection(object):
                 * ``flightid``: flightid for which reservation is made (INT)
                                 
 
-        :return: True when reservation is created 
-        :raise ValueError: if the reservation argument is not well formed.
-        
+        :return: True when reservation is created
         """
         #SQL Statement to create the row in  Reservation table
 
@@ -1507,7 +1519,6 @@ class Connection(object):
         Note that all values are string if they are not otherwise indicated.
 
         :return: True when reservation is modified or False is the reservationid does not exist
-        :raise ValueError: if the reservationid, userid and/or flightid are not well formed.
         """
 
         query1 = 'SELECT * from Reservation WHERE reservation_id = ?'
@@ -1550,7 +1561,6 @@ class Connection(object):
         :param str reservationid: The reservationid is a string with format ``res-\d{1,2}``.
 
         :return: True if the reservation is deleted, False otherwise.
-        :raise ValueError: if the reservation_id is not well formed.
         """
         #Create the SQL Statements
           #SQL Statement for deleting a reservation information
@@ -1587,7 +1597,6 @@ class Connection(object):
         :return: dictionary with the format provided in the method:
             :py:meth:`_create_ticket_object`
 
-        :raise ValueError: if the ticket_id is not well formed.
         """
         #SQL Statement for retrieving the ticket information for given ticketid
         query = 'SELECT * FROM Ticket WHERE ticket_id = ?'
@@ -1641,7 +1650,6 @@ class Connection(object):
                         The reservation_id is a string with format ``res-\d{1,2}``
         :return: dictionary with the format provided in the method:
             :py:meth:`_create_ticket_object`
-        :raise ValueError: if the reservation_id is not well formed.
         """
 
         #SQL Statement for retrieving the ticket information for given reservationid
@@ -1777,7 +1785,6 @@ class Connection(object):
         Note that all values are string if they are not otherwise indicated.
 
         :return: True when ticket is modified or False is the ticket_id does not exist
-        :raise ValueError: if the ticket_id is not well formed.
         """
 
         query1 = 'SELECT * from Ticket WHERE ticket_id = ?'
@@ -1822,7 +1829,6 @@ class Connection(object):
         :param ticket_id: The id of the ticket to be deleted.
                         The ticket_id is a string with format ``ticketnum-\d{1,4}``.
         :return: True if the ticket is deleted, False otherwise.
-        :raise ValueError: if the ticket_id is not well formed.
         """
         #Create the SQL Statements
           #SQL Statement for deleting the ticket information
