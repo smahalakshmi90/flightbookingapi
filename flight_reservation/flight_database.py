@@ -1839,18 +1839,37 @@ class Connection(object):
         #Create the SQL Statements
           #SQL Statement for deleting the ticket information
         query = 'DELETE FROM Ticket WHERE ticket_id = ?'
+        query_get_flight_id = 'SELECT flight_id, nbSeatsLeft FROM Ticket natural join Reservation natural join Flight WHERE ticket_id = ?'
+        query_increase_seats = 'UPDATE Flight SET nbSeatsLeft = nbSeatsLeft + 1 WHERE flight_id = ?'
+
         #Activate foreign key support
         self.set_foreign_keys_support()
         #Cursor and row initialization
         self.con.row_factory = sqlite3.Row
         cur = self.con.cursor()
+
+        # Get flight id of the ticket
+        pvalue = (ticket_id,)
+        cur.execute(query_get_flight_id, pvalue)
+        flight_row = cur.fetchone()
+        if flight_row is None:
+            return False
+        flight_id = flight_row[0]
+        nbSeatsLeft = flight_row[1]
+
         #Execute the statement to delete
+        cur = self.con.cursor()
         pvalue = (ticket_id,)
         cur.execute(query, pvalue)
         self.con.commit()
         #Check that if the ticket has been deleted
         if cur.rowcount < 1:
             return False
+
+        # Increase seats available fo flight
+        pvalue = (flight_id,)
+        cur.execute(query_increase_seats, pvalue)
+        self.con.commit()
         return True
 
     def contains_ticket(self, ticket_id):

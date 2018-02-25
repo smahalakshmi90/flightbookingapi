@@ -277,12 +277,26 @@ class TicketDBAPITestCase(unittest.TestCase):
         print('(' + self.test_create_ticket.__name__ + ')', \
               self.test_create_ticket.__doc__)
 
+        # Get the flight associated with the new ticket to create
+        reservation = self.connection.get_reservation(NEW_TICKET["reservationid"])
+        flight = self.connection.get_flight(reservation["flightid"])
+
+        # Check nb seats before insertion
+        seats_left_before_insert = flight["seatsleft"]
+
         new_ticket_id = self.connection.create_ticket(NEW_TICKET)
         self.assertIsNotNone(new_ticket_id)
 
         # Check that ticket is correctly registered in database
         ticket = self.connection.get_ticket(new_ticket_id)
         self.assertDictContainsSubset(NEW_TICKET, ticket)
+
+        # Check nb seats available after insertion
+        flight = self.connection.get_flight(reservation["flightid"])
+        seats_left_after_insert = flight["seatsleft"]
+
+        # Check that we have one less seat
+        self.assertEqual(seats_left_before_insert, seats_left_after_insert + 1)
 
 
     def test_create_ticket_no_seat_available(self):
@@ -332,6 +346,13 @@ class TicketDBAPITestCase(unittest.TestCase):
         print('(' + self.test_delete_ticket.__name__ + ')', \
               self.test_delete_ticket.__doc__)
 
+        # Get the flight associated with the new ticket to create
+        reservation = self.connection.get_reservation(TICKET_1010["reservationid"])
+        flight = self.connection.get_flight(reservation["flightid"])
+
+        # Check nb seats before insertion
+        seats_left_before_insert = flight["seatsleft"]
+
         # Delete ticket 1010
         resp = self.connection.delete_ticket(TICKETID_1010)
         self.assertTrue(resp)
@@ -339,6 +360,13 @@ class TicketDBAPITestCase(unittest.TestCase):
         # Check that ticket is not in database
         resp = self.connection.get_ticket(TICKETID_1010)
         self.assertIsNone(resp)
+
+        # Check nb seats available after insertion
+        flight = self.connection.get_flight(reservation["flightid"])
+        seats_left_after_insert = flight["seatsleft"]
+
+        # Check that we have one more seat
+        self.assertEqual(seats_left_before_insert, seats_left_after_insert - 1)
 
 
     def test_delete_ticket_nonexisting_id(self):
