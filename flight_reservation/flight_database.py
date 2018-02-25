@@ -1700,6 +1700,7 @@ class Connection(object):
         Note that all values are string if they are not otherwise indicated.
 
         :return: None if the ticket can not be created; the id of the new ticket otherwise
+        :raises NoMoreSeatsAvailableException when the flight is full (no seat available)
         """
         query1 = 'SELECT * from Ticket WHERE ticket_id = ?'
         query2 = 'SELECT flight_id from Reservation WHERE reservation_id = ?'
@@ -1742,6 +1743,11 @@ class Connection(object):
                 return None
             nbInitialSeats = flight_row['nbInitialSeats']
             nbSeatsLeft = flight_row['nbSeatsLeft']
+
+            # Check that there is enough seats left
+            if nbSeatsLeft < 1:
+                raise NoMoreSeatsAvailableException("No seat available for the flight")
+
             seat = nbInitialSeats - nbSeatsLeft + 1
             # Execute the statement
             pvalue = (ticket_id, firstName, lastName, gender, age, reservation_id, seat)
@@ -1854,12 +1860,8 @@ class Connection(object):
         :return: True if the ticket is in the database. False otherwise
         """
         return self.get_ticket(ticket_id) is not None
-    
-    
 
+class NoMoreSeatsAvailableException(Exception):
 
-
-
-
-
-
+    def __init__(self, message):
+        super(NoMoreSeatsAvailableException, self).__init__(message)

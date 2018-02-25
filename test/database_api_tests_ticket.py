@@ -91,10 +91,17 @@ NEW_TICKET_UNAVAILABLE_SEAT = {
 TICKET_1010_AND_1020_RESID = 11
 NB_TICKETS_RES_11 = 2
 
+NEW_TICKET_FLIGHT_FULL = {
+    'reservationid': 33,
+    'firstname': 'James',
+    'lastname': 'Watt',
+    'gender': 'male',
+    'age': 34,
+}
+
 TICKET_WRONG_ID = 35
 RESERVATION_WRONG_ID = 300
 INITIAL_SIZE = 5
-
 
 class TicketDBAPITestCase(unittest.TestCase):
     """
@@ -276,6 +283,20 @@ class TicketDBAPITestCase(unittest.TestCase):
         # Check that ticket is correctly registered in database
         ticket = self.connection.get_ticket(new_ticket_id)
         self.assertDictContainsSubset(NEW_TICKET, ticket)
+
+
+    def test_create_ticket_no_seat_available(self):
+        """
+        Checks that we can not create ticket if all seats of
+        the flight are booked
+        """
+        print('(' + self.test_create_ticket_no_seat_available.__name__ + ')', \
+              self.test_create_ticket_no_seat_available.__doc__)
+
+        from flight_reservation.flight_database import NoMoreSeatsAvailableException
+        with self.assertRaises(NoMoreSeatsAvailableException):
+            # Creation of the ticket raises an error
+            self.connection.create_ticket(NEW_TICKET_FLIGHT_FULL)
 
 
     def test_modify_ticket(self):
