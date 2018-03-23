@@ -24,6 +24,14 @@ DATE_FORMAT = "%Y-%m-%d"
 # Format used for tome
 TIME_FORMAT = "%H:%M"
 
+## REGULAR EXPRESSIONS ##
+
+# Phone number regex
+PHONE_NUMBER_REGEX = "^(\+)?(\s)?([0-9](\s)?)+[0-9]$"
+
+# Email regex
+EMAIL_REGEX = "^(([a-zA-Z]|[0-9])+)(\.([a-zA-Z]|[0-9])+)*\@(([a-zA-Z]|[0-9])+)(\.([a-zA-Z]|[0-9]])+)+$"
+
 class Engine(object):
 
     """
@@ -745,7 +753,9 @@ class Connection(object):
         Note that all values are string if they are not otherwise indicated.
 
         :return: True when user is created
-        :raises ValueError when the birth date is not well formed
+        :raises: DateFormatException when the birth date is in incorrect format
+        :raises: PhoneNumberFormatException when the phone number is in incorrect format
+        :raises: EmailFormatException email is in incorrect format
         """
         
         #SQL Statement to create the row in  users table
@@ -776,7 +786,18 @@ class Connection(object):
                 return None
 
         except ValueError:
-            raise ValueError("Birth date format is incorrect")
+            raise DateFormatException("Birth date format is incorrect")
+
+        # Check phone number format
+        phone_number_pattern = re.compile(PHONE_NUMBER_REGEX)
+        if not phone_number_pattern.match(phoneNumber):
+            raise PhoneNumberFormatException("Phone number format is incorrect")
+
+        # Check email format
+        email_pattern = re.compile(EMAIL_REGEX)
+        if not email_pattern.match(email):
+            raise EmailFormatException("Email format is incorrect")
+
 
         #Activate foreign key support
         self.set_foreign_keys_support()
@@ -834,6 +855,9 @@ class Connection(object):
         Note that all values are string if they are not otherwise indicated.
 
         :return: True when user is modified or False is the user_id does not exist
+        :raises: DateFormatException when the birth date is in incorrect format
+        :raises: PhoneNumberFormatException when the phone number is in incorrect format
+        :raises: EmailFormatException email is in incorrect format
         """
         #Create the SQL Statements
         #SQL Statement for extracting the User using user_id
@@ -863,7 +887,17 @@ class Connection(object):
                 return False
 
         except ValueError:
-            raise ValueError("Birth date format is incorrect")
+            raise DateFormatException("Birth date format is incorrect")
+
+        # Check phone number format
+        phone_number_pattern = re.compile(PHONE_NUMBER_REGEX)
+        if not phone_number_pattern.match(phoneNumber):
+            raise PhoneNumberFormatException("Phone number format is incorrect")
+
+        # Check email format
+        email_pattern = re.compile(EMAIL_REGEX)
+        if not email_pattern.match(email):
+            raise EmailFormatException("Email format is incorrect")
 
         #Activate foreign key support
         self.set_foreign_keys_support()
@@ -1924,7 +1958,24 @@ class Connection(object):
         """
         return self.get_ticket(ticket_id) is not None
 
+# Exception classes
+
 class NoMoreSeatsAvailableException(Exception):
 
     def __init__(self, message):
         super(NoMoreSeatsAvailableException, self).__init__(message)
+
+class DateFormatException(ValueError):
+
+    def __init__(self, message):
+        super(DateFormatException, self).__init__(message)
+
+class PhoneNumberFormatException(ValueError):
+
+    def __init__(self, message):
+        super(PhoneNumberFormatException, self).__init__(message)
+
+class EmailFormatException(ValueError):
+
+    def __init__(self, message):
+        super(EmailFormatException, self).__init__(message)

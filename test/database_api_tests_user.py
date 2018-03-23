@@ -107,6 +107,47 @@ MODIFIED_USER1_TOO_YOUNG = {
     'gender': 'male',
     'registrationDate': 1519423463929,
 }
+
+NEW_USER_MALFORMED_PHONE_NUMBER = {
+    'lastname': 'Tilton',
+    'firstname': 'John',
+    'phonenumber': 'P 92722736387',
+    'email': 'john.tilton@jhj.jh',
+    'dateofBirth': '1981-04-04',
+    'gender': 'male',
+    'registrationDate': 1519423463929,
+}
+
+MODIFIED_USER1_MALFORMED_PHONE_NUMBER = {
+    'lastname': 'Tilton',
+    'firstname': 'John',
+    'phonenumber': 'A92722736387',
+    'email': 'john.tilton@jhj.jh',
+    'dateofBirth': '1981-04-04',
+    'gender': 'male',
+    'registrationDate': 1519423463929,
+}
+
+NEW_USER_MALFORMED_EMAIL = {
+    'lastname': 'Tilton',
+    'firstname': 'John',
+    'phonenumber': '92722736387',
+    'email': 'john.tilton.example.com',
+    'dateofBirth': '1981-04-04',
+    'gender': 'male',
+    'registrationDate': 1519423463929,
+}
+
+MODIFIED_USER1_MALFORMED_EMAIL = {
+    'lastname': 'Tilton',
+    'firstname': 'John',
+    'phonenumber': '92722736387',
+    'email': 'john.tilton.example.com',
+    'dateofBirth': '1981-04-04',
+    'gender': 'male',
+    'registrationDate': 1519423463929,
+}
+
 NEW_USER_ID = 6
 
 USER_WRONG_ID = 100
@@ -309,8 +350,8 @@ class UserDBAPITestCase(unittest.TestCase):
         modified_user_malformed_birthdate = dict(MODIFIED_USER1)
         modified_user_malformed_birthdate["dateofBirth"] = "21-04-1996"
 
-        with self.assertRaises(ValueError):
-            self.connection.create_user(modified_user_malformed_birthdate)
+        with self.assertRaises(database.DateFormatException):
+            self.connection.modify_user(USER1_ID, modified_user_malformed_birthdate)
 
 
     def test_modify_user_too_young(self):
@@ -357,7 +398,7 @@ class UserDBAPITestCase(unittest.TestCase):
         user_malformed_birthdate = dict(USER1)
         user_malformed_birthdate["dateofBirth"] = "21-04-1996"
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(database.DateFormatException):
             self.connection.create_user(user_malformed_birthdate)
 
 
@@ -371,6 +412,51 @@ class UserDBAPITestCase(unittest.TestCase):
 
         resp = self.connection.create_user(NEW_USER_TOO_YOUNG)
         self.assertIsNone(resp)
+
+
+    def test_append_user_malformed_phone_number(self):
+        """
+        Checks that we can not append a user with
+        a phone number in wrong format
+        """
+        print('(' + self.test_append_user_malformed_phone_number.__name__ + ')', \
+              self.test_append_user_malformed_phone_number.__doc__)
+
+        with self.assertRaises(database.PhoneNumberFormatException):
+            self.connection.create_user(NEW_USER_MALFORMED_PHONE_NUMBER)
+
+    def test_modify_user_malformed_phone_number(self):
+        """
+        Checks that we can not modify a user with
+        a phone number in wrong format
+        """
+        print('(' + self.test_modify_user_malformed_phone_number.__name__ + ')', \
+              self.test_modify_user_malformed_phone_number.__doc__)
+
+        with self.assertRaises(database.PhoneNumberFormatException):
+            self.connection.modify_user(USER1_ID, MODIFIED_USER1_MALFORMED_PHONE_NUMBER)
+
+    def test_append_user_malformed_email(self):
+        """
+        Checks that we can not append a user with
+        an email address in wrong format
+        """
+        print('(' + self.test_append_user_malformed_email.__name__ + ')', \
+              self.test_append_user_malformed_email.__doc__)
+
+        with self.assertRaises(database.EmailFormatException):
+            self.connection.create_user(NEW_USER_MALFORMED_EMAIL)
+
+    def test_modify_user_malformed_email(self):
+        """
+        Checks that we can not modify a user with
+        an email in wrong format
+        """
+        print('(' + self.test_modify_user_malformed_email.__name__ + ')', \
+              self.test_modify_user_malformed_email.__doc__)
+
+        with self.assertRaises(database.EmailFormatException):
+            self.connection.modify_user(USER1_ID, MODIFIED_USER1_MALFORMED_EMAIL)
 
 
     def test_not_contains_user(self):
