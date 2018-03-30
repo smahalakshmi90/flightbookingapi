@@ -366,8 +366,131 @@ def close_connection(exc):
 
 
 class User(Resource):
-    pass
 
+    def get(self, user_id):
+        """
+            Get basic information of a user:
+
+            INPUT PARAMETER:
+           : param str user_id: identifier of the required user.
+
+            OUTPUT:
+             * Return 200 if the user id exists.
+             * Return 404 if the user id is not stored in the system.
+
+            RESPONSE ENTITY BODY:
+            * Media type recommended: application/vnd.mason+json
+            * Profile recommended: User
+
+            Link relations used: self, collection, delete, edit, reservations-history
+
+            Semantic descriptors used: userid and registrationDate
+
+            NOTE:
+            The: py: method:`Connection.get_user()` returns a dictionary with the
+            the following format.
+
+            {
+                'userid':,
+                'lastname': '',
+                'firstname': '',
+                'phonenumber': '',
+                'email': '',
+                'dateofBirth': '',
+                'gender': '',
+                'registrationDate':
+            }
+        """
+        # Get user from database
+        user_db = g.con.get_user(user_id)
+        if not user_db:
+            return create_error_response(404, "Unknown user",
+                                         "There is no user with id " + str(user_id))
+
+        # Create the envelope
+        envelope = FlightBookingObject(
+            userid = user_id,
+            lastName = user_db["lastname"],
+            firstName = user_db["firstname"],
+            phoneNumber = user_db["phonenumber"],
+            email = user_db["email"],
+            birthDate = user_db["dateofBirth"],
+            gender = user_db["gender"],
+            registrationdate = user_db["registrationDate"]
+        )
+
+        envelope.add_namespace("flight-booking-system", LINK_RELATIONS_URL)
+        envelope.add_control("self", href=api.url_for(User, user_id=user_id))
+        envelope.add_control("profile", USER_SCHEMA_URL)
+        envelope.add_control_edit_user(user_id=user_id)
+        envelope.add_control_delete_user(user_id=user_id)
+        envelope.add_control_reservations_history(user_id=user_id)
+        envelope.add_control("collection", href=api.url_for(Users), method="GET")
+
+        return Response(json.dumps(envelope), 200, mimetype=MASON + ";" + FLIGHT_BOOKING_SYSTEM_USER_PROFILE)
+
+
+    def put(self, user_id):
+        """
+            Edit the information of a user
+
+            REQUEST ENTITY BODY:
+            * Media type: JSON
+
+            :param user_id: identifier of the user to edit.
+        """
+
+        if not g.con.contains_user(user_id):
+            return create_error_response(404, "Unknown user", "There is no user with id " + str(user_id))
+
+        request_body = request.get_json()
+        if not request_body:
+            return create_error_response(415, "Unsupported Media Type", "Use  JSON format")
+
+        # Get the user info from database
+        user_db = g.con.get_user(user_id)
+        try:
+            # Create a dict with the updated info of the user
+            # We don't need the id and registration date as
+            # we DO NOT allow to edit these attributes
+            updated_user = {
+                "firstname": request_body["firstName"],
+                "lastname": request_body["lastName"],
+                "email": request_body["email"],
+                "phonenumber": request_body["phoneNumber"],
+                "dateofBirth": request_body["birthDate"],
+                "gender": request_body["gender"],
+            }
+        except KeyError:
+            return create_error_response(400, "Wrong request format", "Be sure to include all mandatory properties")
+
+        if not g.con.modify_user(user_id, updated_user):
+            return NotFound()
+
+        # Update success
+        return "", 204
+
+
+    def delete(self, user_id):
+        """
+            Delete a user in the system.
+
+           : param str user_id: identifier of the user to delete.
+
+            RESPONSE STATUS CODE:
+             * If the user is deleted returns 204.
+             * If the user id does not exist return 404
+        """
+
+        # Try to delete the user. If it could not be deleted, the database
+        # returns False.
+        if g.con.delete_user(user_id):
+            # RENDER RESPONSE
+            return '', 204
+        else:
+            # GENERATE ERROR RESPONSE
+            return create_error_response(404, "Unknown user",
+                                         "There is no a user with id " + str(user_id))
 
 class Users(Resource):
     pass
