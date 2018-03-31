@@ -493,7 +493,142 @@ class User(Resource):
                                          "There is no a user with id " + str(user_id))
 
 class Users(Resource):
-    pass
+
+    def get(self):
+        """
+            Gets a list of all the users in the database.
+
+            This method always returns the status 200.
+
+            RESPONSE ENTITITY BODY:
+
+             OUTPUT:
+                * Media type: application/vnd.mason+json
+                    https://github.com/JornWildt/Mason
+                * Profile: User
+                    /profiles/user-profile
+
+            Link relations used in items: add-user
+
+            Semantic descriptions used in items: user_id, registrationdate
+
+            Link relations used in links: messages-all
+
+            Semantic descriptors used in template: lastName, firstName,
+            phoneNumber, email, birthDate, gender
+        """
+
+        # Get the list of users from the database
+        users_db = g.con.get_users()
+
+        # Create the envelope (response)
+        envelope = FlightBookingObject()
+
+        envelope.add_namespace("flight-booking-system", LINK_RELATIONS_URL)
+
+        envelope.add_control("self", href=api.url_for(Users))
+        envelope.add_control_add_user()
+
+        items = envelope["items"] = []
+
+        for user in users_db:
+            item = FlightBookingObject(
+                user_id=user["userid"],
+                registrationdate=user["registrationDate"]
+            )
+            item.add_control("self", href=api.url_for(User, user_id=user["userid"]))
+            item.add_control("profile", USER_SCHEMA_URL)
+            item.add_control_reservations_history(user_id=user["userid"])
+            items.append(item)
+
+        # RENDER
+        return Response(json.dumps(envelope), 200, mimetype=MASON + ";" + FLIGHT_BOOKING_SYSTEM_USER_PROFILE)
+
+
+    def post(self):
+        """
+        Adds a new user in the database.
+
+        REQUEST ENTITY BODY:
+         * Media type: JSON
+         * Profile: User
+
+        Semantic descriptors used in template: lastName, firstName, phoneNumber,
+        email, birthDate, gender
+
+        RESPONSE STATUS CODE:
+         * Returns 201 + the url of the new resource in the Location header if the user is created
+         * Return 409 if a user with the same email exists in the database
+         * Return 400 if the request body is not well formed
+         * Return 415 if it receives a media type != application/json
+
+        NOTE:
+        The: py: method:`Connection.append_user()` receives as a parameter a
+        dictionary with the following format.
+        {
+            'lastname': lastname,
+            'firstname': firstname,
+            'phonenumber': phonenumber,
+            'email': email,
+            'dateofBirth': dateofBirth,
+            'gender': gender,
+            'registrationDate': registrationDate
+        }
+
+        """
+
+        # Check Content-Type
+        if JSON != request.headers.get("Content-Type", ""):
+            abort(415)
+        # PARSE THE REQUEST:
+        request_body = request.get_json(force=True)
+
+        # Check that body is JSON
+        if not request_body:
+            return create_error_response(415, "Unsupported Media Type",
+                                         "Use a JSON compatible format",
+                                         )
+
+        # Check conflict with email
+        try:
+            email = request_body["email"]
+        except KeyError:
+            return create_error_response(400, "Wrong request format", "User email was missing from the request")
+
+        # Conflict if the email already exists
+        if g.con.contains_user_with_email(email):
+            return create_error_response(409, "Wrong email",
+                                         "There is already a user with the same email: " + email)
+
+        # pick up rest of the mandatory fields
+        try:
+            first_name = request_body["firstname"]
+            last_name = request_body["lastname"]
+            phone_number = request_body["phonenumber"]
+            email = request_body["email"]
+            birth_date = request_body["dateofBirth"]
+            gender = request_body["gender"]
+        except KeyError:
+            return create_error_response(400, "Wrong request format", "Be sure to include all mandatory properties")
+
+        user = {
+            'firstname': first_name,
+            'lastname': last_name,
+            'phonenumber': phone_number,
+            'email': email,
+            'dateofBirth': birth_date,
+            'gender': gender,
+        }
+
+        try:
+            user_id = g.con.create_user(user)
+        except ValueError:
+            return create_error_response(400, "Wrong request format",
+                                         "Be sure you include all mandatory properties")
+
+        # CREATE RESPONSE AND RENDER
+        return Response(status=201,
+                        headers={"Location": api.url_for(User, user_id=user_id)})
 
 
 class Reservation(Resource):

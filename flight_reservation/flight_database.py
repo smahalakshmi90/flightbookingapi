@@ -740,7 +740,6 @@ class Connection(object):
 
                 where:
 
-                
                     * ``userid``: user id for an user (INT)
                     * ``lastname``: lastname of the user (TEXT)
                     * ``firstname``: firstname of the user (TEXT)
@@ -766,8 +765,7 @@ class Connection(object):
                   VALUES(?,?,?,?,?,?,?)'
                   
         #temporal variables for user table
-        #timestamp will be used for lastlogin and regDate.
-        timestamp = time.mktime(datetime.now().timetuple())
+        registration_date = int(round(time.time() * 1000))
         lastName = user.get('lastname', None)
         firstName = user.get('firstname', None)
         phoneNumber = user.get('phonenumber', None)
@@ -815,7 +813,7 @@ class Connection(object):
         if row is None:
             #Add the row in User table
             # Execute the statement
-            pvalue = (lastName, firstName, phoneNumber, email, birthDate, gender, timestamp)
+            pvalue = (lastName, firstName, phoneNumber, email, birthDate, gender, registration_date)
             cur.execute(query2, pvalue)
             self.con.commit()
             return cur.lastrowid
@@ -957,6 +955,15 @@ class Connection(object):
         :return: True if the user is in the database. False otherwise
         """
         return self.get_user(user_id) is not None
+
+
+    def contains_user_with_email(self, email):
+        """
+        Checks if a user with a specific email exists in the database
+
+        :param email: the email to search.
+        :return: True is a user with the email param exists in the database. False otherwise.
+        """
 
     #TemplateFlight Table API
     def get_template_flight(self, tflight_id):
