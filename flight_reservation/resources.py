@@ -11,7 +11,7 @@ from flask import Flask, request, Response, g, _request_ctx_stack, redirect, sen
 from flask_restful import Resource, Api, abort
 from werkzeug.exceptions import NotFound, UnsupportedMediaType
 
-from flight_reservation import database
+from flight_reservation import flight_database as database
 
 # Constants for hypermedia formats and profiles
 MASON = "application/vnd.mason+json"
