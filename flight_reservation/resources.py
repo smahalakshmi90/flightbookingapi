@@ -632,8 +632,85 @@ class Users(Resource):
 
 
 class Reservation(Resource):
-    pass
 
+
+    def get(self, reservation_id):
+        """
+            Get basic information of a reservation:
+
+            INPUT PARAMETER:
+           : param str reservation_id: identifier of the required reservation.
+
+            OUTPUT:
+             * Return 200 if the reservation id exists.
+             * Return 404 if the reservation id is not stored in the system.
+
+            RESPONSE ENTITY BODY:
+            * Media type recommended: application/vnd.mason+json
+            * Profile recommended: Reservation
+
+            Link relations used: self, author, delete
+
+            NOTE:
+            The: py: method:`Connection.get_reservation()` returns a dictionary with the
+            the following format.
+
+            {
+               'reservationid': ,
+               'reference': '',
+               'reservationdate' : '',
+               'userid' : ,
+               'flightid':
+           }
+        """
+        # Get reservation from database
+        reservation_db = g.con.get_reservation(reservation_id)
+        if not reservation_db:
+            return create_error_response(404, "Unknown reservation",
+                                         "There is no reservation with id " + str(reservation_id))
+
+        # Create the envelope
+        envelope = FlightBookingObject(
+            reservationid=reservation_id,
+            reference=reservation_db["reference"],
+            re_date=reservation_db["reservationdate"],
+            user_id=reservation_db["userid"],
+            flight_id=reservation_db["flightid"]
+        )
+
+        envelope.add_namespace("flight-booking-system", LINK_RELATIONS_URL)
+        envelope.add_control("self", href=api.url_for(Reservation, reservation_id=reservation_id))
+        envelope.add_control("profile", RESERVATION_SCHEMA_URL)
+        envelope.add_control_delete_reservation(reservation_id)
+        envelope.add_control_author(reservation_id["userid"])
+        envelope.add_control(title="Get the flight details",
+                             href=api.url_for(Flight, flight_id=reservation_db["flightid"]),
+                             encoding="json",
+                             method="GET")
+
+        return Response(json.dumps(envelope), 200, mimetype=MASON + ";" + FLIGHT_BOOKING_SYSTEM_RESERVATION_PROFILE)
+
+
+    def delete(self, reservation_id):
+        """
+            Delete a reservation in the system.
+
+           : param str reservation_id: identifier of the reservation to delete.
+
+            RESPONSE STATUS CODE:
+             * If the reservation id is deleted returns 204.
+             * If the reservation id does not exist return 404
+        """
+
+        # Try to delete the reservation. If it could not be deleted, the database
+        # returns False.
+        if g.con.delete_reservation(reservation_id):
+            # RENDER RESPONSE
+            return '', 204
+        else:
+            # GENERATE ERROR RESPONSE
+            return create_error_response(404, "Unknown reservation",
+                                         "There is no reservation with id " + str(reservation_id))
 
 class UserReservations(Resource):
     pass
