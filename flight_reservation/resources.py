@@ -884,16 +884,358 @@ class ReservationTickets(Resource):
 
 
 class Flight(Resource):
-    pass
+    def get(self, flight_id):
+        """
+            Get basic information of a flight:
+            
+            INPUT PARAMETER:
+            : param str flight_id: identifier of the required reservation.
+            
+            OUTPUT:
+            * Return 200 if the flight id exists.
+            * Return 404 if the flight id is not stored in the system.
+            
+            RESPONSE ENTITY BODY:
+            * Media type recommended: application/vnd.mason+json
+            * Profile recommended: Flight
+            
+            Link relations used: self, profile, collection, make_reservation, subsection
+            Semantic descriptors used in template: flight_id, template_id, code, gate ,
+            price,depDate,arrDate, nbInitialSeats, nbSeatsLeft
+            
+            NOTE:
+            The: py: method:`Connection.get_flight()` returns a dictionary with the
+            the following format.
+            
+            {'searchresultid': ,
+            'flightid': ,
+            'code': '',
+            'price': ,
+            'departuredate':'',
+            'arrivaldate': '',
+            'gate': '' ,
+            'totalseats':,
+            'seatsleft':
+            }
+            """
+        
+        # Get user from database
+        flight_db = g.con.get_flight(flight_id)
+        if not flight_db:
+            return create_error_response(404,
+                                         title="Unknown flight",
+                                         message="There is no flight with id " + str(flight_id))
+    
+        # Create the envelope
+        envelope = FlightBookingObject(
+                    flight_id = flight_id,
+                    template_id = flight_db["searchresultid"],
+                    code = flight_db["code"],
+                    gate = flight_db["gate"],
+                    price = flight_db["price"],
+                    depDate = flight_db["departuredate"],
+                    arrDate = flight_db["arrivaldate"],
+                    nbInitialSeats = flight_db["totalseats"],
+                    nbSeatsLeft = flight_db["seatsleft"]
+                    )
+            
+        envelope.add_namespace("flight-booking-system", LINK_RELATIONS_URL)
+                                       
+        envelope.add_control("self", href=api.url_for(Flight, flight_id=flight_id))
+        envelope.add_control("profile", FLIGHT_SCHEMA_URL)
+        envelope.add_control("collection", href=api.url_for(Flights), method="GET")
+        envelope.add_control("subsection, "href=api.url_for(TemplateFlights, template_id = flight_db["searchresultid"]),
+                                                            method="GET")
+        envelope.add_control_make_reservation(user_id)
+                                       
+                                       
+        return Response(json.dumps(envelope), 200, mimetype=MASON + ";" + FLIGHT_BOOKING_SYSTEM_FLIGHT_PROFILE)
 
 
 class Flights(Resource):
-    pass
+    def get(self, template_id):
+        """
+            Get information of all flight for a particular template flight.
+            
+            INPUT PARAMETER:
+            : param str template_id: identifier of the required flights.
+            
+            OUTPUT:
+            * Return 200 if the template id exists.
+            * Return 404 if the template id is not stored in the system.
+            
+            RESPONSE ENTITITY BODY:
+            
+            OUTPUT:
+            * Media type recommended: application/vnd.mason+json
+            * Profile recommended: Flight
+            
+            Link relations used in items: self, profile, add_flights
+            
+            Semantic descriptions used in items: flight_id, template_id, code, gate ,
+            price, depDate, arrDate, nbInitialSeats, nbSeatsLeft
+            """
+        
+        # Get the list of users from the database
+        flights_db = g.con.get_flights_by_template(template_id)
+        
+        if not flights_db:
+            return create_error_response(404,
+                                         title="Flights not found",
+                                         message="There are no flights with TemplateFlight %s " % template_id)
+        
+        # Create the envelope (response)
+        envelope = FlightBookingObject()
+        
+        envelope.add_namespace("flight-booking-system", LINK_RELATIONS_URL)
+        
+        envelope.add_control("self", href=api.url_for(Flights))
+        evelope.add_control_add_flight()
+        
+        items = envelope["items"] = []
+        
+        for flight in flights_db:
+            item = FlightBookingObject(
+                    flightid = flight_id,
+                    template_id = flight_db["searchresultid"],
+                    code = flight_db["code"],
+                    gate = flight_db["gate"],
+                    price = flight_db["price"],
+                    depDate = flight_db["departuredate"],
+                    arrDate = flight_db["arrivaldate"],
+                    nbInitialSeats = flight_db["totalseats"],
+                    nbSeatsLeft = flight_db["seatsleft"]
+                    )
+            item.add_control("self", href=api.url_for(Flight, template_id=template_id)
+            item.add_control("profile", FLIGHT_SCHEMA_URL)
+            item.add_control("collection", href=api.url_for(Flights), method="GET")
+            item.add_control("subsection, "href=api.url_for(TemplateFlights, template_id = flight_db["searchresultid"]),
+                                                                         method="GET")
+            item.add_control_make_reservation(user_id)
+            items.append(item)
+                                                        
+            # RENDER
+            return Response(json.dumps(envelope), 200, mimetype=MASON + ";" + FLIGHT_BOOKING_SYSTEM_FLIGHT_PROFILE)
+                                                        
+    def post(self):
+        """
+        Adds a new flight in the database.
 
+        REQUEST ENTITY BODY:
+         * Media type: JSON
+         * Profile: Flight
+
+        Semantic descriptors used in flight: flight_id, template_id, code, gate ,
+                                                price, depDate, arrDate, nbInitialSeats, nbSeatsLeft
+
+        RESPONSE STATUS CODE:
+         * Returns 201 + the url of the new resource in the Location header if the flight is created
+         * Return 409 if a flight with the same flight exists in the database
+         * Return 400 if the request body is not well formed
+         * Return 415 if it receives a media type != application/json
+
+        NOTE:
+        The: py: method:`Connection.create_flight()` receives as a parameter a
+        dictionary with the following format.
+            {
+            'searchresultid': result_id ,
+            'flightid':flight_id ,
+            'code': code,
+            'price': price,
+            'departuredate':departure_date,
+            'arrivaldate':arrival_date,
+            'gate':gate ,
+            'totalseats':total_seats,
+            'seatsleft':seats_left
+            }
+
+        """
+
+        # Check Content-Type
+        if JSON != request.headers.get("Content-Type", ""):
+            abort(415)
+        # PARSE THE REQUEST:
+        request_body = request.get_json(force=True)
+
+        # Check that body is JSON
+        if not request_body:
+            return create_error_response(415, "Unsupported Media Type",
+                                         "Use a JSON compatible format",
+                                         )
+
+        flight_id = request_body["flightid"]
+        # Conflict if the email already exists
+        if g.con.contains_flight(flight_id):
+            return create_error_response(409, "Wrong flight id",
+                                         "There is already a flight with the same flightid: " + flight_id)
+
+        # pick up rest of the mandatory fields
+        try:
+            template_id = request_body["searchresultid"]
+            flight_id = request_body["flightid"]
+            code = request_body["code"]
+            price = request_body["price"]
+            departure_date = request_body["departuredate"]
+            arrival_date = request_body["arrivaldate"]
+            gate = request_body["gate"]
+            total_seats = request_body["totalseats"]
+            seats_left = request_body["seatsleft"]
+        except KeyError:
+            return create_error_response(400, "Wrong request format", "Be sure to include all mandatory properties")
+
+        flight = {
+            'searchresultid': template_id ,
+            'flightid':flight_id ,
+            'code': code,
+            'price': price,
+            'departuredate':departure_date,
+            'arrivaldate':arrival_date,
+            'gate':gate ,
+            'totalseats':total_seats,
+            'seatsleft':seats_left
+        }
+
+        try:
+            flight_id = g.con.create_flight(flight)
+        except ValueError:
+            return create_error_response(400, "Wrong request format",
+                                         "Be sure you include all mandatory properties")
+
+        # CREATE RESPONSE AND RENDER
+        return Response(status=201,
+                        headers={"Location": api.url_for(Flight, flight_id=flight_id)})
 
 class TemplateFlight(Resource):
-    pass
+    def get(self, tflight_id):
+        """
+            Get basic information of a template flight:
+
+            INPUT PARAMETER:
+           : param str tflight_id: identifier of the required template flight.
+
+            OUTPUT:
+             * Return 200 if the template flight id exists.
+             * Return 404 if the template flight id is not stored in the system.
+
+            RESPONSE ENTITY BODY:
+            * Media type recommended: application/vnd.mason+json
+            * Profile recommended: Template Flight
+
+            Link relations used: self, collection, flights-scheduled
+            Semantic descriptors used: tflight_id, depTime, arrTime, origin, destination
+
+            NOTE:
+            The: py: method:`Connection.get_template_flight()` returns a dictionary with the
+            the following format.
+
+            {'searchid': ,
+             'origin': '',
+             'destination': '',
+             'departuretime': ,
+             'arrivaltime':
+            }
+        """
+        # Get user from database
+        tflight_db = g.con.get_template_flight(self, tflight_id)
+        if not tflight_db:
+            return create_error_response(404, "Unknown template flight",
+                                         "There is no template flight with id " + str(tflight_id))
+
+        # Create the envelope
+        envelope = FlightBookingObject(
+            search_id = tflight_id,
+            origin = tflight_db["origin"],
+            destination = tflight_db["destination"],
+            dep_time = tflight_db["departuretime"],
+            arr_time = tflight_db["arrivaltime"],
+            
+        )
+
+        envelope.add_namespace("flight-booking-system", LINK_RELATIONS_URL)
+        envelope.add_control("self", href=api.url_for(TemplateFlight, tflight_id=tflight_id))
+        envelope.add_control("profile", TEMPLATE_FLIGHT_SCHEMA_URL)   
+        envelope.add_control("collection", href=api.url_for(TemplateFlights), method="GET")
+        envelope.add_control_flights_scheduled(tflight_id)
+
+        return Response(json.dumps(envelope), 200, mimetype=MASON + ";" + FLIGHT_BOOKING_SYSTEM_TEMPLATE_FLIGHT_PROFILE)
 
 
 class TemplateFlights(Resource):
-    pass
+    def post(self):
+        """
+        Adds a new template flight in the database.
+
+        REQUEST ENTITY BODY:
+         * Media type: JSON
+         * Profile: Flight
+
+        Link relations used: self, add-template-flight
+        Semantic descriptors used: tflight_id, depTime, arrTime, origin, destination
+
+        RESPONSE STATUS CODE:
+         * Returns 201 + the url of the new resource in the Location header if the flight is created
+         * Return 409 if a flight with the same flight exists in the database
+         * Return 400 if the request body is not well formed
+         * Return 415 if it receives a media type != application/json
+
+        NOTE:
+        The: py: method:`Connection.create_template_flight()` receives as a parameter a
+        dictionary with the following format.
+            {
+             'searchid': tflight_id,
+             'origin': origin,
+             'destination': destination,
+             'departuretime': dep_time,
+             'arrivaltime': arr_time 
+             }
+
+        """
+
+        # Check Content-Type
+        if JSON != request.headers.get("Content-Type", ""):
+            abort(415)
+        # PARSE THE REQUEST:
+        request_body = request.get_json(force=True)
+
+        # Check that body is JSON
+        if not request_body:
+            return create_error_response(415, "Unsupported Media Type",
+                                         "Use a JSON compatible format",
+                                         )
+
+        tflight_id = request_body["searchid"]
+        # Conflict if the email already exists
+        if g.con.contains_template_flight(tflight_id):
+            return create_error_response(409, "Wrong template flight id",
+                                         "There is already a flight with the same template flight id: " + tflight_id)
+
+        # pick up rest of the mandatory fields
+        try:
+            search_id = request_body["tflight_id"],
+            origin = request_body["origin"],
+            destination = request_body["destination"],
+            dep_time = request_body["departuretime"],
+            arr_time = request_body["arrivaltime"],
+        except KeyError:
+            return create_error_response(400, "Wrong request format", "Be sure to include all mandatory properties")
+
+        tflight = {
+            'searchid': tflight_id,
+             'origin': origin,
+             'destination': destination,
+             'departuretime': dep_time,
+             'arrivaltime': arr_time 
+        }
+
+        try:
+            tflight_id = g.con.create_template_flight(tflight)
+        except ValueError:
+            return create_error_response(400, "Wrong request format",
+                                         "Be sure you include all mandatory properties")
+
+        # CREATE RESPONSE AND RENDER
+        return Response(status=201,
+                        headers={"Location": api.url_for(Flight, flight_id=flight_id)})
+
+        
+                                                        
