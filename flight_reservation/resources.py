@@ -209,14 +209,13 @@ class FlightBookingObject(MasonObject):
             "isHrefTemplate": "true"
         }
 
-    def add_control_make_reservation(self, user_id):
+    def add_control_make_reservation(self):
         """
         Adds the control to perform one reservation for one user
-        :param user_id: the id of the user that will make the reservation
         """
         self["@controls"]["flight-booking-system:make-reservation"] = {
             "title": "Make a reservation with this flight",
-            "href": api.url_for(UserReservations, user_id=user_id),
+            "href": api.url_for(Reservations),
             "encoding": "json",
             "method": "POST",
             "schemaUrl": RESERVATION_SCHEMA_URL
@@ -769,24 +768,22 @@ class UserReservations(Resource):
         # RENDER
         return Response(json.dumps(envelope), 200, mimetype=MASON + ";" + FLIGHT_BOOKING_SYSTEM_RESERVATION_PROFILE)
 
+class Reservations:
 
-    def post(self, user_id):
+    def post(self):
         """
-            Adds a new reservation in the reservations list of a user.
+            Create a new reservation in the system.
 
             REQUEST ENTITY BODY:
              * Media type: JSON
              * Profile: Reservation
 
-            Semantic descriptors used in template: reservation_id, reference, re_date,
-            user_id, flight_id
-
             RESPONSE STATUS CODE:
              * Returns 201 + the url of the new resource in the Location header if the reservation is created
              * Return 409 if the user has already booked the flight
-             * Return 400 if the request body is not well formed
+             * Return 400 if the request body is not well formed or user id / flight id is incorrect
              * Return 415 if it receives a media type != application/json
-             * Return 500 if the user id or flight id does not exist
+             * Return 500 if there is a database error
 
             NOTE:
             The: py: method:`Connection.create_reservation()` receives as a parameter a
@@ -811,8 +808,8 @@ class UserReservations(Resource):
 
         # pick up rest of the mandatory fields
         try:
-            reference = request_body["reference"]
-            flight_id = request_body["flightid"]
+            user_id = request_body["user_id"]
+            flight_id = request_body["flight_id"]
             tickets = request_body.get("tickets", [])
         except KeyError:
             return create_error_response(400, "Wrong request format",
@@ -820,12 +817,12 @@ class UserReservations(Resource):
 
         # Check if user exists
         if not g.con.contains_user(user_id):
-            return create_error_response(500, "Invalid user",
+            return create_error_response(400, "Invalid user",
                                          "The user chosen to book the flight does not exist.")
 
         # Check if flight exists
         if not g.con.contains_flight(flight_id):
-            return create_error_response(500, "Invalid flight",
+            return create_error_response(400, "Invalid flight",
                                          "The flight chosen to make a reservation does not exist.")
 
         # Check if user has already booked the flight
@@ -868,7 +865,6 @@ class UserReservations(Resource):
             except NoMoreSeatsAvailableException:
                 return create_error_response(500, "Flight is full",
                                              "No more seats are available for the flight")
-
 
         # CREATE RESPONSE AND RENDER
         return Response(status=201,
@@ -944,9 +940,9 @@ class Flight(Resource):
         envelope.add_control("self", href=api.url_for(Flight, flight_id=flight_id))
         envelope.add_control("profile", FLIGHT_SCHEMA_URL)
         envelope.add_control("collection", href=api.url_for(Flights), method="GET")
-        envelope.add_control("subsection, "href=api.url_for(TemplateFlights, template_id = flight_db["searchresultid"]),
+        envelope.add_control("subsection", href=api.url_for(TemplateFlights, template_id = flight_db["searchresultid"]),
                                                             method="GET")
-        envelope.add_control_make_reservation(user_id)
+        envelope.add_control_make_reservation()
                                        
                                        
         return Response(json.dumps(envelope), 200, mimetype=MASON + ";" + FLIGHT_BOOKING_SYSTEM_FLIGHT_PROFILE)
@@ -990,28 +986,28 @@ class Flights(Resource):
         envelope.add_namespace("flight-booking-system", LINK_RELATIONS_URL)
         
         envelope.add_control("self", href=api.url_for(Flights))
-        evelope.add_control_add_flight()
+        envelope.add_control_add_flight()
         
         items = envelope["items"] = []
         
         for flight in flights_db:
             item = FlightBookingObject(
-                    flightid = flight_id,
-                    template_id = flight_db["searchresultid"],
-                    code = flight_db["code"],
-                    gate = flight_db["gate"],
-                    price = flight_db["price"],
-                    depDate = flight_db["departuredate"],
-                    arrDate = flight_db["arrivaldate"],
-                    nbInitialSeats = flight_db["totalseats"],
-                    nbSeatsLeft = flight_db["seatsleft"]
+                    flightid = flight["flight_id"],
+                    template_id = template_id,
+                    code = flight["code"],
+                    gate = flight["gate"],
+                    price = flight["price"],
+                    depDate = flight["departuredate"],
+                    arrDate = flight["arrivaldate"],
+                    nbInitialSeats = flight["totalseats"],
+                    nbSeatsLeft = flight["seatsleft"]
                     )
-            item.add_control("self", href=api.url_for(Flight, template_id=template_id)
+            item.add_control("self", href=api.url_for(Flight, template_id=template_id))
             item.add_control("profile", FLIGHT_SCHEMA_URL)
             item.add_control("collection", href=api.url_for(Flights), method="GET")
-            item.add_control("subsection, "href=api.url_for(TemplateFlights, template_id = flight_db["searchresultid"]),
+            item.add_control("subsection", href=api.url_for(TemplateFlights, template_id = flight["searchresultid"]),
                                                                          method="GET")
-            item.add_control_make_reservation(user_id)
+            item.add_control_make_reservation()
             items.append(item)
                                                         
             # RENDER
@@ -1153,7 +1149,7 @@ class TemplateFlight(Resource):
 
         envelope.add_namespace("flight-booking-system", LINK_RELATIONS_URL)
         envelope.add_control("self", href=api.url_for(TemplateFlight, tflight_id=tflight_id))
-        envelope.add_control("profile", TEMPLATE_FLIGHT_SCHEMA_URL)   
+        envelope.add_control("profile", FLIGHT_BOOKING_SYSTEM_TEMPLATE_FLIGHT_PROFILE)
         envelope.add_control("collection", href=api.url_for(TemplateFlights), method="GET")
         envelope.add_control_flights_scheduled(tflight_id)
 
@@ -1235,7 +1231,4 @@ class TemplateFlights(Resource):
 
         # CREATE RESPONSE AND RENDER
         return Response(status=201,
-                        headers={"Location": api.url_for(Flight, flight_id=flight_id)})
-
-        
-                                                        
+                        headers={"Location": api.url_for(Flight, flight_id=request_body["flight_id"])})
