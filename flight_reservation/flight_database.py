@@ -1528,8 +1528,7 @@ class Connection(object):
 
                 .. code-block:: javascript
 
-                    reservation = {'reservationid': reservation_id,
-                                    'reference': reference,
+                    reservation = { 'reference': reference,
                                     'reservationdate' : reservation_date,
                                     'userid' : creator_id,
                                     'flightid': flight_id}

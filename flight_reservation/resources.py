@@ -12,6 +12,7 @@ from flask_restful import Resource, Api, abort
 from werkzeug.exceptions import NotFound, UnsupportedMediaType
 
 from flight_reservation import flight_database as database
+from flight_reservation.flight_database import NoMoreSeatsAvailableException
 
 # Constants for hypermedia formats and profiles
 MASON = "application/vnd.mason+json"
@@ -512,8 +513,6 @@ class Users(Resource):
 
             Semantic descriptions used in items: user_id, registrationdate
 
-            Link relations used in links: messages-all
-
             Semantic descriptors used in template: lastName, firstName,
             phoneNumber, email, birthDate, gender
         """
@@ -713,7 +712,167 @@ class Reservation(Resource):
                                          "There is no reservation with id " + str(reservation_id))
 
 class UserReservations(Resource):
-    pass
+
+
+    def get(self, user_id):
+        """
+            Gets a list of all the reservations of a specific user.
+
+            RESPONSE STATUS CODE:
+             * 200 if the reservations of the user are found
+             * 404 if the user_id does not exist in the database
+
+            RESPONSE ENTITITY BODY:
+
+             OUTPUT:
+                * Media type: application/vnd.mason+json
+                    https://github.com/JornWildt/Mason
+                * Profile: User
+                    /profiles/reservation-profile
+
+            Link relations used in items: delete, author, reservation-tickets
+
+            Semantic descriptions used in items: reservation_id, reference, re_date
+
+            Link relations used in links: author
+
+            Semantic descriptors used in template: reservation_id, reference, re_date,
+            user_id, flight_id
+        """
+
+        # Get the list of the user reservations
+        reservations_db = g.con.get_reservations_by_user(user_id)
+
+        # Create the envelope (response)
+        envelope = FlightBookingObject()
+
+        envelope.add_namespace("flight-booking-system", LINK_RELATIONS_URL)
+
+        envelope.add_control("self", href=api.url_for(UserReservations, user_id=user_id))
+        envelope.add_control_author(user_id)
+
+        items = envelope["items"] = []
+
+        for reservation in reservations_db:
+            item = FlightBookingObject(
+                reservation_id=reservation["reservationid"],
+                reference=reservation["reference"],
+                re_date=reservation["reservationdate"]
+            )
+            item.add_control("self", href=api.url_for(Reservation, reservation_id=reservation["reservationid"]))
+            item.add_control("profile", RESERVATION_SCHEMA_URL)
+            item.add_control_reservation_tickets(reservation["reservationid"])
+            item.add_control_add_ticket(reservation["reservationid"])
+
+            items.append(item)
+
+        # RENDER
+        return Response(json.dumps(envelope), 200, mimetype=MASON + ";" + FLIGHT_BOOKING_SYSTEM_RESERVATION_PROFILE)
+
+
+    def post(self, user_id):
+        """
+            Adds a new reservation in the reservations list of a user.
+
+            REQUEST ENTITY BODY:
+             * Media type: JSON
+             * Profile: Reservation
+
+            Semantic descriptors used in template: reservation_id, reference, re_date,
+            user_id, flight_id
+
+            RESPONSE STATUS CODE:
+             * Returns 201 + the url of the new resource in the Location header if the reservation is created
+             * Return 409 if the user has already booked the flight
+             * Return 400 if the request body is not well formed
+             * Return 415 if it receives a media type != application/json
+             * Return 500 if the user id or flight id does not exist
+
+            NOTE:
+            The: py: method:`Connection.create_reservation()` receives as a parameter a
+            dictionary with the following format.
+            {
+                'userid': ,
+                'flightid': ,
+            }
+
+        """
+
+        # Check Content-Type
+        if JSON != request.headers.get("Content-Type", ""):
+            abort(415)
+        # PARSE THE REQUEST:
+        request_body = request.get_json(force=True)
+
+        # Check that body is JSON
+        if not request_body:
+            return create_error_response(415, "Unsupported Media Type",
+                                         "Use a JSON compatible format")
+
+        # pick up rest of the mandatory fields
+        try:
+            reference = request_body["reference"]
+            flight_id = request_body["flightid"]
+            tickets = request_body.get("tickets", [])
+        except KeyError:
+            return create_error_response(400, "Wrong request format",
+                                         "Be sure to include all mandatory properties")
+
+        # Check if user exists
+        if not g.con.contains_user(user_id):
+            return create_error_response(500, "Invalid user",
+                                         "The user chosen to book the flight does not exist.")
+
+        # Check if flight exists
+        if not g.con.contains_flight(flight_id):
+            return create_error_response(500, "Invalid flight",
+                                         "The flight chosen to make a reservation does not exist.")
+
+        # Check if user has already booked the flight
+        user_reservations = g.con.get_reservations_by_user(user_id)
+        has_booked = False
+        for reservation in user_reservations:
+            if reservation["flightid"] == flight_id:
+                has_booked = True
+
+        if has_booked:
+            return create_error_response(409, "Already booked",
+                                         "The user " + user_id + " has already booked the flight " + flight_id)
+        reservation = {
+            'userid': user_id,
+            'flightid': flight_id
+        }
+
+        try:
+            reservation_id = g.con.create_reservation(reservation)
+        except ValueError:
+            return create_error_response(400, "Wrong request format",
+                                         "Be sure you include all mandatory properties")
+
+        # Create the tickets specified (if any)
+        for ticket in tickets:
+            # Check fields
+            try:
+                first_name = ticket["firstName"]
+                last_name = ticket["familyName"]
+                age = ticket["age"]
+                gender = ticket["gender"]
+                seat = ticket["seat"]
+            except ValueError:
+                return create_error_response(400, "Wrong request format",
+                                             "Be sure you include all mandatory properties")
+
+            # Try to create the ticket
+            try:
+                g.con.create_ticket(ticket)
+            except NoMoreSeatsAvailableException:
+                return create_error_response(500, "Flight is full",
+                                             "No more seats are available for the flight")
+
+
+        # CREATE RESPONSE AND RENDER
+        return Response(status=201,
+                        headers={"Location": api.url_for(Reservation, reservation_id=reservation_id)})
 
 
 class Ticket(Resource):
