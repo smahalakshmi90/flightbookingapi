@@ -1519,6 +1519,7 @@ class Connection(object):
             reservations_flight.append(self._create_reservation_list_object(row))
         return reservations_flight
 
+
     def create_reservation(self, reservation):
         """
         Create a new reservation in the database.
@@ -1546,14 +1547,9 @@ class Connection(object):
         """
         #SQL Statement to create the row in  Reservation table
 
-        query1 = 'SELECT * from Reservation WHERE reservation_id = ?'
-
-        query2 = 'INSERT INTO Reservation (reservation_id, reference, re_date, creator_id, flight_id)\
+        query_insert = 'INSERT INTO Reservation (reference, re_date, creator_id, flight_id)\
                   VALUES(?,?,?,?,?)'
 
-        reservation_id = reservation.get('reservationid', None)
-        reference = reservation.get('reference', None)
-        reservation_date = reservation.get('reservationdate', None)
         creator_id = reservation.get('userid', None)
         flight_id = reservation.get('flightid', None)
 
@@ -1562,28 +1558,20 @@ class Connection(object):
         #Cursor and row initialization
         self.con.row_factory = sqlite3.Row
         cur = self.con.cursor()
-        
-        #Execute the statement to check if a reservation with the reservation_id already exists
-        pvalue =(reservation_id,)
-        cur.execute(query1, pvalue) 
-          
-        #No value expected 
-        row = cur.fetchone()
-        #If there is no reservation add rows in Reservation 
-        if row is None:
-            #Add the row in 
-            # Execute the statement
-            timestamp = strftime("%Y-%m-%d", gmtime())
-            pvalue = (reservation_id, reference, timestamp, creator_id, flight_id)
-            try:
-                cur.execute(query2, pvalue)
-            except sqlite3.IntegrityError:
-                return None
 
-            self.con.commit()
-            return cur.lastrowid
-        else:
+        # Get a new reference and current timestamp
+        reference = self.generate_new_reservation_reference()
+        timestamp = strftime("%Y-%m-%d", gmtime())
+
+        # Execute the statement
+        pvalue = (reference, timestamp, creator_id, flight_id)
+        try:
+            cur.execute(query_insert, pvalue)
+        except sqlite3.IntegrityError:
             return None
+
+        self.con.commit()
+        return cur.lastrowid
 
     def modify_reservation(self, reservationid,reference, userid, flightid):
         """
@@ -1963,6 +1951,41 @@ class Connection(object):
         :return: True if the ticket is in the database. False otherwise
         """
         return self.get_ticket(ticket_id) is not None
+
+
+    # UTIL METHODS
+    def generate_new_reservation_reference(self):
+        """
+        Generates a new random reservation reference that
+        does not exist in the database.
+        This new reference can then be used to make a new reservation.
+        :return: a new reference that does not exist in the database.
+        """
+
+        # To get all the references that exist
+        query_all_references = "SELECT reference FROM Reservation"
+
+        self.con.row_factory = sqlite3.Row
+        cur = self.con.cursor()
+        # Execute the statement to check if the flight exists
+        cur.execute(query_all_references)
+        # Only one value expected
+        rows_references = cur.fetchall()
+        references = [row_reference[0] for row_reference in rows_references]
+
+        # Format is [A-Z][A-Z][0-9][0-9][A-Z]
+        import random
+        import string
+        new_reference = None
+        while new_reference is None and new_reference in references:
+            new_reference = random.choice(string.letters)
+            new_reference += random.choice(string.letters)
+            new_reference += str(random.randint(0,9))
+            new_reference += str(random.randint(0,9))
+            new_reference += random.choice(string.letters)
+
+        return new_reference
+
 
 # Exception classes
 
