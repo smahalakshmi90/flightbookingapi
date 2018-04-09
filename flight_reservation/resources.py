@@ -689,8 +689,9 @@ class Reservation(Resource):
         envelope.add_control("self", href=api.url_for(Reservation, reservation_id=reservation_id))
         envelope.add_control("profile", href=FLIGHT_BOOKING_SYSTEM_RESERVATION_PROFILE)
         envelope.add_control_delete_reservation(reservation_id)
-        envelope.add_control_author(reservation_id["userid"])
-        envelope.add_control(title="Get the flight details",
+        envelope.add_control_author(reservation_db["userid"])
+        envelope.add_control("subsection",
+                             title="Get the flight details",
                              href=api.url_for(Flight, flight_id=reservation_db["flightid"]),
                              encoding="application/json",
                              method="GET")
@@ -1252,6 +1253,8 @@ api.add_resource(Reservations, "/flight-booking-system/api/reservations",
                  endpoint="reservations")
 api.add_resource(Reservation, "/flight-booking-system/api/reservations/<int:reservation_id>",
                  endpoint="reservation")
+api.add_resource(Flight, "/flight-booking-system/api/flights/<int:flight_id>",
+                 endpoint="flight")
 
 #Start the application
 #DATABASE SHOULD HAVE BEEN POPULATED PREVIOUSLY
