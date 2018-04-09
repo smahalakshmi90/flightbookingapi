@@ -964,6 +964,23 @@ class Connection(object):
         :param email: the email to search.
         :return: True is a user with the email param exists in the database. False otherwise.
         """
+        query = "SELECT * FROM User WHERE email = ?"
+
+        # Activate foreign key support
+        self.set_foreign_keys_support()
+        # Cursor and row initialization
+        self.con.row_factory = sqlite3.Row
+        cur = self.con.cursor()
+        # Execute the SQL Statement to retrieve the template flight information.
+        # Create first the valuse
+        pvalue = (email,)
+        # execute the statement
+        cur.execute(query, pvalue)
+        row = cur.fetchone()
+
+        return not row is None
+
+
 
     #TemplateFlight Table API
     def get_template_flight(self, tflight_id):

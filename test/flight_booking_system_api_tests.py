@@ -419,6 +419,263 @@ class UserTestCase(ResourcesAPITestCase):
         self.assertEqual(resp.status_code, 415)
 
 
+class UsersTestCase(ResourcesAPITestCase):
+
+    user1_list_object = {
+        'userid': 1,
+        'lastname': 'Tilton',
+        'firstname': 'John',
+        'registrationdate': 1519423463929,
+    }
+
+    user2_list_object = {
+        'userid': 2,
+        'lastname': 'Sam',
+        'firstname': 'Jacob',
+        'registrationdate': 1519423463929,
+    }
+
+    new_user = {
+        'lastname': 'Larue',
+        'firstname': 'Jules',
+        'phonenumber': '+33065837465',
+        'email': 'jules.larue@example.com',
+        'dateofBirth': '1996-07-28',
+        'gender': 'Male',
+    }
+
+    new_user_malformed_birthdate = {
+        'lastname': 'Larue',
+        'firstname': 'Jules',
+        'phonenumber': '+33065837465',
+        'email': 'jules.larue@example.com',
+        'dateofBirth': '28-07-1996',
+        'gender': 'Male',
+    }
+
+    new_user_too_young = {
+        'lastname': 'Larue',
+        'firstname': 'Jules',
+        'phonenumber': '+33065837465',
+        'email': 'jules.larue@example.com',
+        'dateofBirth': '2017-07-28',
+        'gender': 'Male',
+    }
+
+    new_user_malformed_phone_number = {
+        'lastname': 'Tilton',
+        'firstname': 'John',
+        'phonenumber': 'P 92722736387',
+        'email': 'john.tilton2@jhj.jh',
+        'dateofBirth': '1981-04-04',
+        'gender': 'male',
+    }
+
+    new_user_malformed_email = {
+        'lastname': 'Tilton',
+        'firstname': 'John',
+        'phonenumber': '92722736387',
+        'email': 'john.tilton.example.com',
+        'dateofBirth': '1981-04-04',
+        'gender': 'male',
+    }
+
+    new_user_existing_email = {
+        'lastname': 'Tilton',
+        'firstname': 'John',
+        'phonenumber': '92722736387',
+        'email': 'john.tilton@jhj.jh',
+        'dateofBirth': '1981-04-04',
+        'gender': 'male',
+    }
+
+    def setUp(self):
+        super(UsersTestCase, self).setUp()
+        self.url = resources.api.url_for(resources.Users, _external=False)
+
+    def test_url(self):
+        """
+        Checks that the URL points to the right resource
+        """
+        print("("+self.test_url.__name__+")", self.test_url.__doc__)
+        url = "/flight-booking-system/api/users"
+        with resources.app.test_request_context(url):
+            rule = flask.request.url_rule
+            view_point = resources.app.view_functions[rule.endpoint].view_class
+            self.assertEqual(view_point, resources.Users)
+
+
+    def test_get_users(self):
+        """
+        Checks that GET Users returns correct response
+        with correct users
+        """
+        print("("+self.test_get_users.__name__+")", self.test_get_users.__doc__)
+        with resources.app.test_client() as client:
+            resp = client.get(self.url)
+            self.assertEqual(resp.status_code, 200)
+            data = json.loads(resp.data.decode("utf-8"))
+
+            # Check data
+            # namespaces
+            self.assertIn("@namespaces", data)
+            self.assertIn("flight-booking-system", data["@namespaces"])
+            self.assertIn("name", data["@namespaces"]["flight-booking-system"])
+            self.assertEqual(data["@namespaces"]["flight-booking-system"]["name"], LINK_RELATIONS_URL)
+
+            # items (users found)
+            self.assertIn("items", data)
+            for user in data["items"]:
+                self.assertIn("user_id", user)
+                self.assertIn("registrationdate", user)
+                user_id = user["user_id"]
+
+                self.assertIn("@controls", user)
+                user_ctrl = user["@controls"]
+                self.assertIn("self", user_ctrl)
+                self.assertIn("href", user_ctrl["self"])
+                self.assertEqual(user_ctrl["self"]["href"], resources.api.url_for(resources.User,
+                                                                             user_id=user_id))
+                self.assertIn("profile", user_ctrl)
+                self.assertIn("href", user_ctrl["profile"])
+                self.assertEqual(user_ctrl["profile"]["href"], FLIGHT_BOOKING_SYSTEM_USER_PROFILE)
+
+                self.assertIn("flight-booking-system:reservations-history", user_ctrl)
+                user_history = user_ctrl["flight-booking-system:reservations-history"]
+                self.assertIn("title", user_history)
+                self.assertIn("href", user_history)
+                self.assertEqual(user_history["href"], resources.api.url_for(resources.UserReservations,
+                                                                             user_id=user_id))
+                self.assertIn("isHrefTemplate", user_history)
+                self.assertEqual(user_history["isHrefTemplate"], "true")
+            # End for users (items)
+
+            self.assertIn("@controls", data)
+            self.assertIn("self", data["@controls"])
+            self.assertIn("href", data["@controls"]["self"])
+            self.assertEqual(data["@controls"]["self"]["href"], resources.api.url_for(resources.Users))
+            self.assertIn("flight-booking-system:add-user", data["@controls"])
+            self.assertIn("title", data["@controls"]["flight-booking-system:add-user"])
+            self.assertIn("href", data["@controls"]["flight-booking-system:add-user"])
+            self.assertEqual(data["@controls"]["flight-booking-system:add-user"]["href"],
+                             resources.api.url_for(resources.Users))
+            self.assertIn("encoding", data["@controls"]["flight-booking-system:add-user"])
+            self.assertEqual(data["@controls"]["flight-booking-system:add-user"]["encoding"],
+                             JSON)
+            self.assertIn("method", data["@controls"]["flight-booking-system:add-user"])
+            self.assertEqual(data["@controls"]["flight-booking-system:add-user"]["method"].lower(),
+                             "post")
+            self.assertIn("schemaUrl", data["@controls"]["flight-booking-system:add-user"])
+            self.assertEqual(data["@controls"]["flight-booking-system:add-user"]["schemaUrl"],
+                             USER_SCHEMA_URL)
+
+
+    def test_add_user(self):
+        """
+        Checks that POST User returns correct status code and adds the user to the system
+        """
+        print("(" + self.test_add_user.__name__ + ")", self.test_add_user.__doc__)
+
+        # Make POST request
+        resp = self.client.post(resources.api.url_for(resources.Users),
+                                headers={"Content-Type": JSON},
+                                data=json.dumps(self.new_user))
+
+        self.assertEqual(resp.status_code, 201)
+        self.assertIn("Location", resp.headers)
+        url = resp.headers["Location"]
+        resp2 = self.client.get(url)
+        self.assertEqual(resp2.status_code, 200)
+
+
+    def test_add_user_malformed_email(self):
+        """
+            Checks that POST User with a malformed email returns correct status code
+        """
+        print("(" + self.test_add_user_malformed_email.__name__ + ")", self.test_add_user_malformed_email.__doc__)
+        resp = self.client.post(resources.api.url_for(resources.Users),
+                                headers={"Content-Type": JSON},
+                                data=json.dumps(self.new_user_malformed_email))
+
+        self.assertEqual(resp.status_code, 400)
+
+
+    def test_add_user_existing_email(self):
+        """
+            Checks that POST User with an existing email returns correct status code
+        """
+        print("(" + self.test_add_user_existing_email.__name__ + ")", self.test_add_user_existing_email.__doc__)
+        resp = self.client.post(resources.api.url_for(resources.Users),
+                                headers={"Content-Type": JSON},
+                                data=json.dumps(self.new_user_existing_email))
+
+        self.assertEqual(resp.status_code, 409)
+
+
+    def test_add_user_malformed_phone(self):
+        """
+            Checks that POST User with an malformed phone returns correct status code
+        """
+        print("(" + self.test_add_user_malformed_phone.__name__ + ")", self.test_add_user_malformed_phone.__doc__)
+        resp = self.client.post(resources.api.url_for(resources.Users),
+                                headers={"Content-Type": JSON},
+                                data=json.dumps(self.new_user_malformed_phone_number))
+
+        self.assertEqual(resp.status_code, 400)
+
+
+    def test_add_user_malformed_birthdate(self):
+        """
+            Checks that POST User with an malformed birth date returns correct status code
+        """
+        print("(" + self.test_add_user_malformed_birthdate.__name__ + ")", self.test_add_user_malformed_birthdate.__doc__)
+        resp = self.client.post(resources.api.url_for(resources.Users),
+                                headers={"Content-Type": JSON},
+                                data=json.dumps(self.new_user_malformed_birthdate))
+
+        self.assertEqual(resp.status_code, 400)
+
+
+    def test_add_user_too_young(self):
+        """
+            Checks that POST User with an birth date > 18 years old
+             returns correct status code
+        """
+        print("(" + self.test_add_user_too_young.__name__ + ")",
+              self.test_add_user_too_young.__doc__)
+        resp = self.client.post(resources.api.url_for(resources.Users),
+                                headers={"Content-Type": JSON},
+                                data=json.dumps(self.new_user_too_young))
+
+        self.assertEqual(resp.status_code, 400)
+
+
+    def test_add_user_wrong_type(self):
+        """
+        Checks that POST User with a wrong Content-Type returns correct status code
+        """
+        print("(" + self.test_add_user_wrong_type.__name__ + ")",
+              self.test_add_user_wrong_type.__doc__)
+        resp = self.client.post(resources.api.url_for(resources.Users),
+                                headers={"Content-Type": "text/html"},
+                                data=json.dumps(self.new_user))
+
+        self.assertEqual(resp.status_code, 415)
+
+
+    def test_get_users_mimetype(self):
+        """
+        Checks that GET Users return correct status code and data format
+        """
+        print("("+self.test_get_users_mimetype.__name__+")", self.test_get_users_mimetype.__doc__)
+
+        #Check that I receive status code 200
+        resp = self.client.get(self.url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.headers.get("Content-Type",None),
+                          "{};{}".format(MASONJSON, FLIGHT_BOOKING_SYSTEM_USER_PROFILE))
+
+
 if __name__ == "__main__":
     print("Start running tests")
     unittest.main()

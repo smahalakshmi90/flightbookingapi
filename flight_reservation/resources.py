@@ -537,10 +537,10 @@ class Users(Resource):
         for user in users_db:
             item = FlightBookingObject(
                 user_id=user["userid"],
-                registrationdate=user["registrationDate"]
+                registrationdate=user["registrationdate"]
             )
             item.add_control("self", href=api.url_for(User, user_id=user["userid"]))
-            item.add_control("profile", USER_SCHEMA_URL)
+            item.add_control("profile", href=FLIGHT_BOOKING_SYSTEM_USER_PROFILE)
             item.add_control_reservations_history(user_id=user["userid"])
             items.append(item)
 
@@ -625,6 +625,10 @@ class Users(Resource):
 
         try:
             user_id = g.con.create_user(user)
+            if user_id is None:
+                return create_error_response(400, "Wrong request format",
+                                             "Be sure that all parameters are correct.")
+
         except ValueError:
             return create_error_response(400, "Wrong request format",
                                          "Be sure you include all mandatory properties")
@@ -683,7 +687,7 @@ class Reservation(Resource):
 
         envelope.add_namespace("flight-booking-system", LINK_RELATIONS_URL)
         envelope.add_control("self", href=api.url_for(Reservation, reservation_id=reservation_id))
-        envelope.add_control("profile", RESERVATION_SCHEMA_URL)
+        envelope.add_control("profile", href=FLIGHT_BOOKING_SYSTEM_RESERVATION_PROFILE)
         envelope.add_control_delete_reservation(reservation_id)
         envelope.add_control_author(reservation_id["userid"])
         envelope.add_control(title="Get the flight details",
@@ -764,7 +768,7 @@ class UserReservations(Resource):
                 re_date=reservation["reservationdate"]
             )
             item.add_control("self", href=api.url_for(Reservation, reservation_id=reservation["reservationid"]))
-            item.add_control("profile", RESERVATION_SCHEMA_URL)
+            item.add_control("profile", href=FLIGHT_BOOKING_SYSTEM_RESERVATION_PROFILE)
             item.add_control_reservation_tickets(reservation["reservationid"])
             item.add_control_add_ticket(reservation["reservationid"])
 
@@ -943,7 +947,7 @@ class Flight(Resource):
         envelope.add_namespace("flight-booking-system", LINK_RELATIONS_URL)
                                        
         envelope.add_control("self", href=api.url_for(Flight, flight_id=flight_id))
-        envelope.add_control("profile", FLIGHT_SCHEMA_URL)
+        envelope.add_control("profile", href=FLIGHT_BOOKING_SYSTEM_FLIGHT_PROFILE)
         envelope.add_control("collection", href=api.url_for(Flights), method="GET")
         envelope.add_control("subsection", href=api.url_for(TemplateFlights, template_id = flight_db["searchresultid"]),
                                                             method="GET")
@@ -1008,7 +1012,7 @@ class Flights(Resource):
                     nbSeatsLeft = flight["seatsleft"]
                     )
             item.add_control("self", href=api.url_for(Flight, template_id=template_id))
-            item.add_control("profile", FLIGHT_SCHEMA_URL)
+            item.add_control("profile", href=FLIGHT_BOOKING_SYSTEM_FLIGHT_PROFILE)
             item.add_control("collection", href=api.url_for(Flights), method="GET")
             item.add_control("subsection", href=api.url_for(TemplateFlights, template_id = flight["searchresultid"]),
                                                                          method="GET")
@@ -1154,7 +1158,7 @@ class TemplateFlight(Resource):
 
         envelope.add_namespace("flight-booking-system", LINK_RELATIONS_URL)
         envelope.add_control("self", href=api.url_for(TemplateFlight, tflight_id=tflight_id))
-        envelope.add_control("profile", FLIGHT_BOOKING_SYSTEM_TEMPLATE_FLIGHT_PROFILE)
+        envelope.add_control("profile", href=FLIGHT_BOOKING_SYSTEM_TEMPLATE_FLIGHT_PROFILE)
         envelope.add_control("collection", href=api.url_for(TemplateFlights), method="GET")
         envelope.add_control_flights_scheduled(tflight_id)
 
