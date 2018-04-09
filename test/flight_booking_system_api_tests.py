@@ -812,6 +812,228 @@ class ReservationTestCase(ResourcesAPITestCase):
 
 
 
+class ReservationsTestCase(ResourcesAPITestCase):
+
+    # New reservation (correct) with 2 tickets
+    new_reservation = {
+        'user_id': 3,
+        'flight_id': 1122,
+        "tickets": [
+            {
+                "firstName": "Jon",
+                "familyName": "Doe",
+                "age": 24,
+                "gender": "male",
+                "seat": "21A"
+            },
+            {
+                "firstName": "Peter",
+                "familyName": "Jackson",
+                "age": 35,
+                "gender": "male",
+                "seat": "10B"
+            }
+        ]
+    }
+
+    # New reservation (correct) with 2 tickets
+    new_reservation_already_made = {
+        'user_id': 1,
+        'flight_id': 1111,
+        "tickets": [
+            {
+                "firstName": "Jon",
+                "familyName": "Doe",
+                "age": 24,
+                "gender": "male",
+                "seat": "21A"
+            },
+            {
+                "firstName": "Peter",
+                "familyName": "Jackson",
+                "age": 35,
+                "gender": "male",
+                "seat": "10B"
+            }
+        ]
+    }
+
+    # new reservation with wrong creator
+    new_reservation_wrong_userid = {
+        'user_id': 40,
+        'flight_id': 1122,
+        "tickets": [
+            {
+                "firstName": "Jon",
+                "familyName": "Doe",
+                "age": 24,
+                "gender": "male",
+                "seat": "21A"
+            },
+            {
+                "firstName": "Peter",
+                "familyName": "Jackson",
+                "age": 35,
+                "gender": "male",
+                "seat": "10B"
+            }
+        ]
+    }
+
+    # new reservation with wrong flight
+    new_reservation_wrong_flightid = {
+        'user__id': 3,
+        'flight_id': 8754,
+        "tickets": [
+            {
+                "firstName": "Jon",
+                "familyName": "Doe",
+                "age": 24,
+                "gender": "male",
+                "seat": "21A"
+            },
+            {
+                "firstName": "Peter",
+                "familyName": "Jackson",
+                "age": 35,
+                "gender": "male",
+                "seat": "10B"
+            }
+        ]
+    }
+
+    # new reservation for a full flight
+    new_reservation_full_flight = {
+        'user_id': 1,
+        'flight_id': 1133,
+        "tickets": [
+            {
+                "firstName": "Jon",
+                "familyName": "Doe",
+                "age": 24,
+                "gender": "male",
+                "seat": "21A"
+            },
+            {
+                "firstName": "Peter",
+                "familyName": "Jackson",
+                "age": 35,
+                "gender": "male",
+                "seat": "10B"
+            }
+        ]
+    }
+
+    def setUp(self):
+        super(ReservationsTestCase, self).setUp()
+        self.url = resources.api.url_for(resources.Reservations, _external=False)
+
+    def test_url(self):
+        """
+        Checks that the URL points to the right resource
+        """
+        print("(" + self.test_url.__name__ + ")", self.test_url.__doc__)
+        url = "/flight-booking-system/api/reservations"
+        with resources.app.test_request_context(url):
+            rule = flask.request.url_rule
+            view_point = resources.app.view_functions['reservations'].view_class
+            self.assertEqual(view_point, resources.Reservations)
+
+
+    def test_add_reservation(self):
+        """
+        Checks that POST Reservations returns correct status code
+        and creates the reservation in the system
+        """
+        print("(" + self.test_add_reservation.__name__ + ")", self.test_add_reservation.__doc__)
+
+        # Send POST request
+        resp = self.client.post(resources.api.url_for(resources.Reservations),
+                                headers={"Content-Type": JSON},
+                                data=json.dumps(self.new_reservation))
+
+        self.assertEqual(resp.status_code, 201)
+        self.assertIn("Location", resp.headers)
+        url = resp.headers["Location"]
+        resp2 = self.client.get(url)
+        self.assertEqual(resp2.status_code, 200)
+
+
+    def test_add_reservation_wrong_user(self):
+        """
+        Checks that POST Reservation with a wrong user id
+        returns correct status code
+        """
+        print("(" + self.test_add_reservation_wrong_user.__name__ + ")", self.test_add_reservation_wrong_user.__doc__)
+
+        # Send POST request
+        resp = self.client.post(resources.api.url_for(resources.Reservations),
+                                headers={"Content-Type": JSON},
+                                data=json.dumps(self.new_reservation_wrong_userid))
+
+        self.assertEqual(resp.status_code, 400)
+
+
+    def test_add_reservation_wrong_flight(self):
+        """
+        Checks that POST Reservation with a wrong user id
+        returns correct status code
+        """
+        print("(" + self.test_add_reservation_wrong_flight.__name__ + ")", self.test_add_reservation_wrong_flight.__doc__)
+
+        # Send POST request
+        resp = self.client.post(resources.api.url_for(resources.Reservations),
+                                headers={"Content-Type": JSON},
+                                data=json.dumps(self.new_reservation_wrong_flightid))
+
+        self.assertEqual(resp.status_code, 400)
+
+
+    def test_add_reservation_wrong_type(self):
+        """
+        Checks that POST Reservations with wrong Content-Type returns correct
+        status code
+        """
+        print("(" + self.test_add_reservation_wrong_type.__name__ + ")", self.test_add_reservation_wrong_type.__doc__)
+
+        # Send POST request
+        resp = self.client.post(resources.api.url_for(resources.Reservations),
+                                headers={"Content-Type": "text/html"},
+                                data=json.dumps(self.new_reservation))
+
+        self.assertEqual(resp.status_code, 415)
+
+
+    def test_add_reservation_already_made(self):
+        """
+        Checks that POST Reservation with a user id that has already booked
+        a flight with flight id returns correct status code
+        """
+        print("(" + self.test_add_reservation_already_made.__name__ + ")", self.test_add_reservation_already_made.__doc__)
+
+        # Send POST request
+        resp = self.client.post(resources.api.url_for(resources.Reservations),
+                                headers={"Content-Type": JSON},
+                                data=json.dumps(self.new_reservation_already_made))
+
+        self.assertEqual(resp.status_code, 409)
+
+
+    def test_add_reservation_full_flight(self):
+        """
+        Checks that POST Reservation for a full flight
+         returns correct status code
+        """
+        print("(" + self.test_add_reservation_full_flight.__name__ + ")", self.test_add_reservation_full_flight.__doc__)
+
+        # Send POST request
+        resp = self.client.post(resources.api.url_for(resources.Reservations),
+                                headers={"Content-Type": JSON},
+                                data=json.dumps(self.new_reservation_full_flight))
+
+        self.assertEqual(resp.status_code, 500)
+
+
 if __name__ == "__main__":
     print("Start running tests")
     unittest.main()

@@ -844,7 +844,7 @@ class Reservations(Resource):
 
         if has_booked:
             return create_error_response(409, "Already booked",
-                                         "The user " + user_id + " has already booked the flight " + flight_id)
+                                         "The user " + str(user_id) + " has already booked the flight " + str(flight_id))
         reservation = {
             'userid': user_id,
             'flightid': flight_id
@@ -871,6 +871,7 @@ class Reservations(Resource):
 
             # Try to create the ticket
             try:
+                ticket["reservationid"] = reservation_id
                 g.con.create_ticket(ticket)
             except NoMoreSeatsAvailableException:
                 return create_error_response(500, "Flight is full",
