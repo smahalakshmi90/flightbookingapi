@@ -246,14 +246,13 @@ class FlightBookingObject(MasonObject):
             "method": "GET",
         }
 
-    def add_control_add_ticket(self, reservation_id):
+    def add_control_add_ticket(self):
         """
-        Adds the control to cretae a new ticket for one specific reservation
-        :param reservation_id: the id of the reservation to which we want to add a new ticket
+        Adds the control to create a new ticket
         """
         self["@controls"]["flight-booking-system:add-ticket"] = {
             "title": "Add a new ticket for this reservation",
-            "href": api.url_for(ReservationTickets, reservation_id=reservation_id),
+            "href": api.url_for(Tickets),
             "encoding": "application/json",
             "method": "POST",
             "schemaUrl": TICKET_SCHEMA_URL
@@ -292,7 +291,7 @@ class FlightBookingObject(MasonObject):
         """
         self["@controls"]["flight-booking-system:reservation-tickets"] = {
             "title": "Tickets of this reservation",
-            "href": api.url_for(Reservation, reservation_id=reservation_id),
+            "href": api.url_for(ReservationTickets, reservation_id=reservation_id),
             "encoding": "application/json",
             "method": "GET"
         }
@@ -749,6 +748,11 @@ class UserReservations(Resource):
             user_id, flight_id
         """
 
+        if not g.con.contains_user(user_id):
+            return create_error_response(404,
+                              title="Unknown user",
+                              message="There is no user with id " + str(user_id))
+
         # Get the list of the user reservations
         reservations_db = g.con.get_reservations_by_user(user_id)
 
@@ -771,7 +775,7 @@ class UserReservations(Resource):
             item.add_control("self", href=api.url_for(Reservation, reservation_id=reservation["reservationid"]))
             item.add_control("profile", href=FLIGHT_BOOKING_SYSTEM_RESERVATION_PROFILE)
             item.add_control_reservation_tickets(reservation["reservationid"])
-            item.add_control_add_ticket(reservation["reservationid"])
+            item.add_control_add_ticket()
 
             items.append(item)
 
@@ -880,6 +884,9 @@ class Reservations(Resource):
         # CREATE RESPONSE AND RENDER
         return Response(status=201,
                         headers={"Location": api.url_for(Reservation, reservation_id=reservation_id)})
+
+class Tickets(Resource):
+    pass
 
 
 class Ticket(Resource):
@@ -1254,6 +1261,10 @@ api.add_resource(Reservations, "/flight-booking-system/api/reservations",
                  endpoint="reservations")
 api.add_resource(Reservation, "/flight-booking-system/api/reservations/<int:reservation_id>",
                  endpoint="reservation")
+api.add_resource(ReservationTickets, "/flight-booking-system/api/reservations/<int:reservation_id>/tickets",
+                 endpoint="reservation_tickets")
+api.add_resource(Tickets, "/flight-booking-system/api/tickets",
+                 endpoint="ticket")
 api.add_resource(Flight, "/flight-booking-system/api/flights/<int:flight_id>",
                  endpoint="flight")
 
