@@ -54,22 +54,16 @@ RESERVATION2_LIST_OBJECT = {
 }
 
 NEW_RESERVATION = {
-    'reference': 'FR23H',
-    'reservationdate': strftime("%Y-%m-%d", gmtime()),
     'userid': 3,
     'flightid': 1122
 }
 
 NEW_RESERVATION_WRONG_USERID = {
-    'reference': 'FR23H',
-    'reservationdate': '2018-02-28',
     'userid':40,
     'flightid': 1122
 }
 
 NEW_RESERVATION_WRONG_FLIGHTID = {
-    'reference': 'FR23H',
-    'reservationdate': '2018-02-28',
     'userid': 3,
     'flightid': 8754
 }

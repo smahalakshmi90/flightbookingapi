@@ -1548,7 +1548,7 @@ class Connection(object):
         #SQL Statement to create the row in  Reservation table
 
         query_insert = 'INSERT INTO Reservation (reference, re_date, creator_id, flight_id)\
-                  VALUES(?,?,?,?,?)'
+                  VALUES(?,?,?,?)'
 
         creator_id = reservation.get('userid', None)
         flight_id = reservation.get('flightid', None)
@@ -1977,14 +1977,14 @@ class Connection(object):
         import random
         import string
         new_reference = None
-        while new_reference is None and new_reference in references:
-            new_reference = random.choice(string.letters)
-            new_reference += random.choice(string.letters)
+        while new_reference is None or new_reference in references:
+            new_reference = str(random.choice(string.ascii_letters))
+            new_reference += str(random.choice(string.ascii_letters))
             new_reference += str(random.randint(0,9))
             new_reference += str(random.randint(0,9))
-            new_reference += random.choice(string.letters)
+            new_reference += str(random.choice(string.ascii_letters))
 
-        return new_reference
+        return new_reference.upper()
 
 
 # Exception classes

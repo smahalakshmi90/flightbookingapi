@@ -12,7 +12,7 @@ from flask_restful import Resource, Api, abort
 from werkzeug.exceptions import NotFound, UnsupportedMediaType
 
 from flight_reservation import flight_database as database
-from flight_reservation.flight_database import NoMoreSeatsAvailableException
+from flight_reservation.flight_database import NoMoreSeatsAvailableException, EmailFormatException, DateFormatException, PhoneNumberFormatException
 
 # Constants for hypermedia formats and profiles
 MASON = "application/vnd.mason+json"
@@ -151,7 +151,7 @@ class FlightBookingObject(MasonObject):
         self["@controls"]["flight-booking-system:add-user"] = {
             "href": api.url_for(Users),
             "title": "Create user",
-            "encoding": "json",
+            "encoding": "application/json",
             "method": "POST",
             "schemaUrl": USER_SCHEMA_URL
         }
@@ -179,9 +179,9 @@ class FlightBookingObject(MasonObject):
         self["@controls"]["edit"] = {
             "href": api.url_for(User, user_id=user_id),
             "title": "Edit this user",
-            "encoding": "json",
+            "encoding": "application/json",
             "method": "PUT",
-            "schema": self._user_schema()
+            "schemaUrl": USER_SCHEMA_URL
         }
 
     def add_control_author(self, author_id):
@@ -192,7 +192,7 @@ class FlightBookingObject(MasonObject):
         self["@controls"]["author"] = {
             "title": "User owning the reservations",
             "href": api.url_for(User, user_id=author_id),
-            "encoding": "json",
+            "encoding": "application/json",
             "method": "GET",
         }
 
@@ -216,7 +216,7 @@ class FlightBookingObject(MasonObject):
         self["@controls"]["flight-booking-system:make-reservation"] = {
             "title": "Make a reservation with this flight",
             "href": api.url_for(Reservations),
-            "encoding": "json",
+            "encoding": "application/json",
             "method": "POST",
             "schemaUrl": RESERVATION_SCHEMA_URL
         }
@@ -228,7 +228,7 @@ class FlightBookingObject(MasonObject):
         self["@controls"]["flight-booking-system:add-flight"] = {
             "title": "Add a new flight",
             "href": api.url_for(Flights),
-            "encoding": "json",
+            "encoding": "application/json",
             "method": "POST",
             "schemaUrl": FLIGHT_SCHEMA_URL
         }
@@ -242,7 +242,7 @@ class FlightBookingObject(MasonObject):
         self["@controls"]["flight-booking-system:flights-scheduled"] = {
             "title": "Get all the flights in this template flights",
             "href": api.url_for(Flights, template_flight_id=template_flight_id),
-            "encoding": "json",
+            "encoding": "application/json",
             "method": "GET",
         }
 
@@ -254,7 +254,7 @@ class FlightBookingObject(MasonObject):
         self["@controls"]["flight-booking-system:add-ticket"] = {
             "title": "Add a new ticket for this reservation",
             "href": api.url_for(ReservationTickets, reservation_id=reservation_id),
-            "encoding": "json",
+            "encoding": "application/json",
             "method": "POST",
             "schemaUrl": TICKET_SCHEMA_URL
         }
@@ -267,7 +267,7 @@ class FlightBookingObject(MasonObject):
         self["@controls"]["flight-booking-system:delete"] = {
             "title": "Delete ticket",
             "href": api.url_for(Ticket, ticket_id=ticket_id),
-            "encoding": "json",
+            "encoding": "application/json",
             "method": "DELETE",
         }
 
@@ -279,7 +279,7 @@ class FlightBookingObject(MasonObject):
         self["@controls"]["edit"] = {
             "title": "Modify ticket",
             "href": api.url_for(Ticket, ticket_id=ticket_id),
-            "encoding": "json",
+            "encoding": "application/json",
             "method": "PUT",
             "schemaUrl": TICKET_SCHEMA_URL
         }
@@ -293,7 +293,7 @@ class FlightBookingObject(MasonObject):
         self["@controls"]["flight-booking-system:reservation-tickets"] = {
             "title": "Tickets of this reservation",
             "href": api.url_for(Reservation, reservation_id=reservation_id),
-            "encoding": "json",
+            "encoding": "application/json",
             "method": "GET"
         }
 
@@ -306,7 +306,7 @@ class FlightBookingObject(MasonObject):
         self["@controls"]["flight-booking-system:delete"] = {
             "title": "Delete this reservation",
             "href": api.url_for(Reservation, reservation_id=reservation_id),
-            "encoding": "json",
+            "encoding": "application/json",
             "method": "DELETE",
         }
 
@@ -409,7 +409,7 @@ class User(Resource):
 
         # Create the envelope
         envelope = FlightBookingObject(
-            userid = user_id,
+            user_id = user_id,
             lastName = user_db["lastname"],
             firstName = user_db["firstname"],
             phoneNumber = user_db["phonenumber"],
@@ -421,7 +421,7 @@ class User(Resource):
 
         envelope.add_namespace("flight-booking-system", LINK_RELATIONS_URL)
         envelope.add_control("self", href=api.url_for(User, user_id=user_id))
-        envelope.add_control("profile", USER_SCHEMA_URL)
+        envelope.add_control("profile", href=FLIGHT_BOOKING_SYSTEM_USER_PROFILE)
         envelope.add_control_edit_user(user_id=user_id)
         envelope.add_control_delete_user(user_id=user_id)
         envelope.add_control_reservations_history(user_id=user_id)
@@ -464,8 +464,13 @@ class User(Resource):
         except KeyError:
             return create_error_response(400, "Wrong request format", "Be sure to include all mandatory properties")
 
-        if not g.con.modify_user(user_id, updated_user):
-            return NotFound()
+        try:
+            if g.con.modify_user(user_id, updated_user) is None:
+                return create_error_response(400, "Wrong request format",
+                                             "Be sure that all attributes have correct format.")
+
+        except (EmailFormatException, DateFormatException, PhoneNumberFormatException, ):
+            return create_error_response(400, "Wrong request format", "Be sure that all attributes have correct format.")
 
         # Update success
         return "", 204
@@ -683,7 +688,7 @@ class Reservation(Resource):
         envelope.add_control_author(reservation_id["userid"])
         envelope.add_control(title="Get the flight details",
                              href=api.url_for(Flight, flight_id=reservation_db["flightid"]),
-                             encoding="json",
+                             encoding="application/json",
                              method="GET")
 
         return Response(json.dumps(envelope), 200, mimetype=MASON + ";" + FLIGHT_BOOKING_SYSTEM_RESERVATION_PROFILE)
@@ -768,7 +773,7 @@ class UserReservations(Resource):
         # RENDER
         return Response(json.dumps(envelope), 200, mimetype=MASON + ";" + FLIGHT_BOOKING_SYSTEM_RESERVATION_PROFILE)
 
-class Reservations:
+class Reservations(Resource):
 
     def post(self):
         """
@@ -1232,3 +1237,20 @@ class TemplateFlights(Resource):
         # CREATE RESPONSE AND RENDER
         return Response(status=201,
                         headers={"Location": api.url_for(Flight, flight_id=request_body["flight_id"])})
+
+api.add_resource(Users, "/flight-booking-system/api/users",
+                 endpoint="users")
+api.add_resource(User, "/flight-booking-system/api/users/<int:user_id>",
+                 endpoint="user")
+api.add_resource(UserReservations, "/flight-booking-system/api/users/<int:user_id>/reservations",
+                 endpoint="user_reservations")
+api.add_resource(Reservations, "/flight-booking-system/api/reservations",
+                 endpoint="reservations")
+api.add_resource(Reservation, "/flight-booking-system/api/reservations/<int:reservation_id>",
+                 endpoint="reservation")
+
+#Start the application
+#DATABASE SHOULD HAVE BEEN POPULATED PREVIOUSLY
+if __name__ == '__main__':
+    #Debug true activates automatic code reloading and improved error messages
+    app.run(debug=True)
