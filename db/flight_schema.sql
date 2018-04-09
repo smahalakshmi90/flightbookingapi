@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS Reservation(
      re_date    TEXT,
      creator_id     INTEGER NOT NULL,
      flight_id  INTEGER NOT NULL,
+     unique (creator_id, flight_id),
     FOREIGN KEY( flight_id ) REFERENCES  Flight ( flight_id ) ON DELETE CASCADE,
     FOREIGN KEY( creator_id ) REFERENCES  User( user_id ) ON DELETE CASCADE);
 
