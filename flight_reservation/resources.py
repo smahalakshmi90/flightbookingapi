@@ -129,6 +129,7 @@ class FlightBookingObject(MasonObject):
     well as any items in a collection type resource.
 
     @author: Jules Larue
+    @author: Mahalakshmy Seetharaman
     """
 
     def __init__(self, **kwargs):
