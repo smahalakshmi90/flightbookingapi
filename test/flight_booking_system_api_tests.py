@@ -29,6 +29,7 @@ USER_SCHEMA_URL = "/flight-booking-system/schema/user"
 RESERVATION_SCHEMA_URL = "/flight-booking-system/schema/user/reservation"
 TICKET_SCHEMA_URL = "/flight-booking-system/schema/user/ticket"
 FLIGHT_SCHEMA_URL = "/flight-booking-system/schema/user/flight"
+TEMPLATE_FLIGHT_SCHEMA_URL="/flight-booking-system/schema/template-flight"
 LINK_RELATIONS_URL = "/flight-booking-system/link-relations/"
 
 # Tell Flask that I am running it in testing mode.
@@ -1167,6 +1168,610 @@ class UserReservationsTestCase(ResourcesAPITestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.headers.get("Content-Type", None),
                          "{};{}".format(MASONJSON, FLIGHT_BOOKING_SYSTEM_RESERVATION_PROFILE))
+
+class FlightTestCase(ResourcesAPITestCase):
+    flight_id = 1111
+    flight = {
+        'searchresultid': 1234 ,
+        'code': 'AY101',
+        'price': 200,
+        'departuredate':'2018-05-06',
+        'arrivaldate':'2018-05-07',
+        'gate':'GATE02' ,
+        'totalseats':90,
+        'seatsleft':10}
+    flight_id_incorrect = 1155
+
+    def setUp(self):
+        super(FlightTestCase, self).setUp()
+
+        self.url = resources.api.url_for(resources.Flight,
+                                          flight_id=self.flight_id,
+                                          _external=False)
+        self.url_incorrect = resources.api.url_for(resources.Flight,
+                                               flight_id=self.flight_id_incorrect,
+                                               _external=False)
+
+    def test_url(self):
+        """
+        Checks that the URL points to the right resource
+        """
+        print("(" + self.test_url.__name__ + ")", self.test_url.__doc__)
+        url = "/flight-booking-system/api/flights/1111"
+        with resources.app.test_request_context(url):
+            rule = flask.request.url_rule
+            view_point = resources.app.view_functions[rule.endpoint].view_class
+            self.assertEqual(view_point, resources.Flight)
+
+    def test_wrong_url(self):
+        """
+        Checks that GET Flight return correct status code if given a
+        not existing flight id
+        """
+        print("(" + self.test_wrong_url.__name__ + ")", self.test_wrong_url.__doc__)
+        resp = self.client.get(self.url_incorrect)
+        self.assertEqual(resp.status_code, 404)
+
+    def test_get_flight(self):
+        """
+        Checks that GET Flight returns correct status code and
+        response
+        """
+        print("(" + self.test_get_flight.__name__ + ")", self.test_get_flight.__doc__)
+        with resources.app.test_client() as client:
+            resp = client.get(self.url)
+            self.assertEqual(resp.status_code, 200)
+            data = json.loads(resp.data.decode("utf-8"))
+
+            self.assertIn("@namespaces", data)
+            self.assertIn("flight-booking-system", data["@namespaces"])
+            self.assertIn("name", data["@namespaces"]["flight-booking-system"])
+            self.assertIn(data["@namespaces"]["flight-booking-system"]["name"], LINK_RELATIONS_URL)
+
+            # Flight attributes
+            self.assertIn("flight_id", data)
+            self.assertEqual(data["flight_id"], self.flight_id)
+            self.assertIn("code", data)
+            self.assertEqual(data["code"], self.flight["code"])
+            self.assertIn("price", data)
+            self.assertEqual(data["price"], self.flight["price"])
+            self.assertIn("gate", data)
+            self.assertEqual(data["gate"], self.flight["gate"])
+            self.assertIn("depDate", data)
+            self.assertEqual(data["depDate"], self.flight["departuredate"])
+
+            self.assertIn("arrDate", data)
+            self.assertEqual(data["arrDate"], self.flight["arrivaldate"])
+
+            self.assertIn("nbInitialSeats", data)
+            self.assertEqual(data["nbInitialSeats"], self.flight["totalseats"])
+            self.assertIn("nbSeatsLeft", data)
+            self.assertEqual(data["nbSeatsLeft"], self.flight["seatsleft"])
+            self.assertIn("template_id", data)
+            self.assertEqual(data["template_id"], self.flight["searchresultid"])
+
+            self.assertIn("@controls", data)
+
+            self.assertIn("self", data["@controls"])
+            self.assertIn("href", data["@controls"]["self"])
+            self.assertEqual(data["@controls"]["self"]["href"], resources.api.url_for(resources.Flight,
+                                                                                      flight_id=self.flight_id))
+
+            self.assertIn("profile", data["@controls"])
+            self.assertIn("href", data["@controls"]["profile"])
+            self.assertEqual(data["@controls"]["profile"]["href"], FLIGHT_BOOKING_SYSTEM_FLIGHT_PROFILE)
+
+            self.assertIn("collection", data["@controls"])
+            self.assertIn("href", data["@controls"]["collection"])
+            self.assertEqual(data["@controls"]["collection"]["href"], resources.api.url_for(resources.Flights, template_id=self.flight["searchresultid"]))
+            self.assertIn("method", data["@controls"]["collection"])
+            self.assertEqual(data["@controls"]["collection"]["method"].lower(), "get")
+
+            self.assertIn("subsection", data["@controls"])
+            self.assertIn("href", data["@controls"]["subsection"])
+            self.assertEqual(data["@controls"]["subsection"]["href"],
+                             resources.api.url_for(resources.TemplateFlights, template_id=self.flight["searchresultid"]))
+            self.assertIn("method", data["@controls"]["subsection"])
+            self.assertEqual(data["@controls"]["subsection"]["method"].lower(), "get")
+
+
+            self.assertIn("flight-booking-system:make-reservation", data["@controls"])
+            self.assertIn("title", data["@controls"]["flight-booking-system:make-reservation"])
+    
+            self.assertIn("href", data["@controls"]["flight-booking-system:make-reservation"])
+            self.assertEqual(data["@controls"]["flight-booking-system:make-reservation"]["href"],
+                             resources.api.url_for(resources.Reservations))
+            self.assertIn("encoding", data["@controls"]["flight-booking-system:make-reservation"])
+            self.assertEqual(data["@controls"]["flight-booking-system:make-reservation"]["encoding"], JSON)
+            self.assertIn("method", data["@controls"]["flight-booking-system:make-reservation"])
+            self.assertEqual(data["@controls"]["flight-booking-system:make-reservation"]["method"].lower(), "post")
+            self.assertIn("schemaUrl", data["@controls"]["flight-booking-system:make-reservation"])
+            self.assertEqual(data["@controls"]["flight-booking-system:make-reservation"]["schemaUrl"],
+                             RESERVATION_SCHEMA_URL)
+
+    def test_get_nonexisting_flight(self):
+        """
+        Checks that GET Flight returns correct status and data
+        with a nonexisting flight id
+        """
+        print("(" + self.test_get_nonexisting_flight.__name__ + ")", self.test_get_nonexisting_flight.__doc__)
+
+        # Check that we have 404 not found
+        resp = self.client.get(self.url_incorrect)
+        self.assertEqual(resp.status_code, 404)
+        err_data = json.loads(resp.data.decode("utf-8"))
+
+        self.assertIn("@error", err_data)
+        self.assertIn("resource_url", err_data)
+
+        error = err_data["@error"]
+        self.assertIn("@message", error)
+        self.assertIn("@messages", error)
+
+        self.assertEqual(err_data["resource_url"],
+                         resources.api.url_for(resources.Flight, flight_id=self.flight_id_incorrect, _external=False))
+
+class FlightsTestCase(ResourcesAPITestCase):
+    template1111_id = 1234
+    flight = {
+        'code': 'AY101',
+        'price': 200,
+        'departuredate':'2018-05-06',
+        'arrivaldate':'2018-05-07',
+        'gate':'GATE02' ,
+        'totalseats':90,
+        'seatsleft':10 }
+    flight_id = 1111
+    template_id_incorrect = 2222
+    flight_wrong_id = 1144
+    flight_new ={
+        'searchresultid': 1237 ,
+        'flightid':1144,
+        'code': 'AY123',
+        'price': 400,
+        'departuredate':'2018-09-03',
+        'arrivaldate':'2018-09-04',
+        'gate':'GATE10' ,
+        'totalseats':100,
+        'seatsleft':15}
+
+    flight_new_existing_code ={
+        'searchresultid': 1234 ,
+        'flightid':1145,
+        'code': 'AY101',
+        'price': 150,
+        'departuredate':'2018-09-03',
+        'arrivaldate':'2018-09-04',
+        'gate':'GATE10' ,
+        'totalseats':110,
+        'seatsleft':14}
+
+    flight_new_existing_flightid ={
+        'searchresultid': 1234 ,
+        'flightid':1111,
+        'code': 'AY126',
+        'price': 400,
+        'departuredate':'2018-05-03',
+        'arrivaldate':'2018-05-04',
+        'gate':'GATE10' ,
+        'totalseats':90,
+        'seatsleft':13}
+
+    flight_new_nonexisting_template ={
+        'searchresultid': 1232 ,
+        'flightid':1146,
+        'code': 'AY125',
+        'price': 500,
+        'departuredate':'2018-08-03',
+        'arrivaldate':'2018-08-04',
+        'gate':'GATE10' ,
+        'totalseats':95,
+        'seatsleft':16}
+    flight_new_malformed_gate ={
+        'searchresultid': 1247 ,
+        'flightid':1144,
+        'code': 'AY124',
+        'price': 300,
+        'departuredate':'2018-09-03',
+        'arrivaldate':'2018-09-04',
+        'gate':'10' ,
+        'totalseats':100,
+        'seatsleft':15}
+
+
+    def setUp(self):
+        super(FlightsTestCase, self).setUp()
+
+        self.url = resources.api.url_for(resources.Flights,
+                                          template_id=self.template1111_id,
+                                          _external=False)
+        self.url_incorrect = resources.api.url_for(resources.Flights,
+                                               template_id=self.template_id_incorrect,
+                                               _external=False)
+
+    def test_url(self):
+        """
+        Checks that the URL points to the right resource
+        """
+        print("(" + self.test_url.__name__ + ")", self.test_url.__doc__)
+        url = "/flight-booking-system/api/template-flights/1234/flights"
+        with resources.app.test_request_context(url):
+            rule = flask.request.url_rule
+            view_point = resources.app.view_functions[rule.endpoint].view_class
+            self.assertEqual(view_point, resources.Flights)
+
+    def test_wrong_url(self):
+        """
+        Checks that GET Flights return correct status code if given a
+        not existing template id
+        """
+        print("(" + self.test_wrong_url.__name__ + ")", self.test_wrong_url.__doc__)
+        resp = self.client.get(self.url_incorrect)
+        self.assertEqual(resp.status_code, 404)
+
+    def test_get_flights(self):
+        """
+        Checks that GET flights return correct status and response (for an existing template flight id)
+        """
+        print("(" + self.test_get_flights.__name__ + ")", self.test_get_flights.__doc__)
+        with resources.app.test_client() as client:
+            resp = client.get(self.url)
+            self.assertEqual(resp.status_code, 200)
+            data = json.loads(resp.data.decode("utf-8"))
+
+            self.assertIn("@namespaces", data)
+            self.assertIn("flight-booking-system", data["@namespaces"])
+            self.assertIn("name", data["@namespaces"]["flight-booking-system"])
+            self.assertIn(data["@namespaces"]["flight-booking-system"]["name"], LINK_RELATIONS_URL)
+
+            # Flight attributes
+            for flight in data["items"]:
+                self.assertIn("flightid", flight)
+
+                flight_id = self.flight_id
+                if flight_id == 1111:
+                    self.assertEqual(flight["flightid"], self.flight_id)
+                    self.assertIn("code", flight)
+                    self.assertEqual(flight["code"], self.flight["code"])
+                    self.assertIn("price", flight)
+                    self.assertEqual(flight["price"], self.flight["price"])
+                    self.assertIn("gate", flight)
+                    self.assertEqual(flight["gate"], self.flight["gate"])
+                    self.assertIn("depDate", flight)
+                    self.assertEqual(flight["depDate"], self.flight["departuredate"])
+                    self.assertIn("arrDate", flight)
+                    self.assertEqual(flight["arrDate"], self.flight["arrivaldate"])
+                    self.assertIn("nbInitialSeats", flight)
+                    self.assertEqual(flight["nbInitialSeats"], self.flight["totalseats"])
+                    self.assertIn("nbSeatsLeft", flight)
+                    self.assertEqual(flight["nbSeatsLeft"], self.flight["seatsleft"])
+                    self.assertIn("template_id", flight)
+                    self.assertEqual(flight["template_id"], self.template1111_id)
+                
+                self.assertIn("@controls", flight)
+
+                self.assertIn("self", flight["@controls"])
+                self.assertIn("href", flight["@controls"]["self"])
+                self.assertEqual(flight["@controls"]["self"]["href"], resources.api.url_for(resources.Flight, flight_id=self.flight_id, _external=False))
+                self.assertIn("profile", flight["@controls"])
+                self.assertIn("href", flight["@controls"]["profile"])
+                self.assertEqual(flight["@controls"]["profile"]["href"], FLIGHT_BOOKING_SYSTEM_FLIGHT_PROFILE)
+
+                self.assertIn("flight-booking-system:make-reservation", flight["@controls"])
+                self.assertIn("title", flight["@controls"]["flight-booking-system:make-reservation"])
+    
+                self.assertIn("href", flight["@controls"]["flight-booking-system:make-reservation"])
+                self.assertEqual(flight["@controls"]["flight-booking-system:make-reservation"]["href"],
+                             resources.api.url_for(resources.Reservations))
+                self.assertIn("encoding", flight["@controls"]["flight-booking-system:make-reservation"])
+                self.assertEqual(flight["@controls"]["flight-booking-system:make-reservation"]["encoding"], JSON)
+                self.assertIn("method", flight["@controls"]["flight-booking-system:make-reservation"])
+                self.assertEqual(flight["@controls"]["flight-booking-system:make-reservation"]["method"].lower(), "post")
+                self.assertIn("schemaUrl", flight["@controls"]["flight-booking-system:make-reservation"])
+                self.assertEqual(flight["@controls"]["flight-booking-system:make-reservation"]["schemaUrl"],
+                             RESERVATION_SCHEMA_URL)
+
+            self.assertIn("@controls", data)
+            self.assertIn("self", data["@controls"])
+            self.assertIn("href", data["@controls"]["self"])
+            self.assertEqual(data["@controls"]["self"]["href"], resources.api.url_for(resources.Flights, template_id=self.template1111_id))
+
+            self.assertIn("flight-booking-system:add-flight", data["@controls"])
+            self.assertIn("title", data["@controls"]["flight-booking-system:add-flight"])
+            self.assertIn("href", data["@controls"]["flight-booking-system:add-flight"])
+            self.assertEqual(data["@controls"]["flight-booking-system:add-flight"]["href"],
+                             resources.api.url_for(resources.Flights, template_id=self.template1111_id))
+            self.assertIn("encoding", data["@controls"]["flight-booking-system:add-flight"])
+            self.assertEqual(data["@controls"]["flight-booking-system:add-flight"]["encoding"], JSON)
+            self.assertIn("method", data["@controls"]["flight-booking-system:add-flight"])
+            self.assertEqual(data["@controls"]["flight-booking-system:add-flight"]["method"].lower(), "post")
+            self.assertIn("schemaUrl", data["@controls"]["flight-booking-system:add-flight"])
+            self.assertEqual(data["@controls"]["flight-booking-system:add-flight"]["schemaUrl"],
+                             FLIGHT_SCHEMA_URL)
+
+    def test_get_nonexisting_templateflight(self):
+        """
+        Checks that GET Flight returns correct status and data
+        with a nonexisting user id
+        """
+        print("(" + self.test_get_nonexisting_templateflight.__name__ + ")", self.test_get_nonexisting_templateflight.__doc__)
+
+        # Check that we have 404 not found
+        resp = self.client.get(self.url_incorrect)
+        self.assertEqual(resp.status_code, 404)
+        err_data = json.loads(resp.data.decode("utf-8"))
+
+        self.assertIn("@error", err_data)
+        self.assertIn("resource_url", err_data)
+
+        error = err_data["@error"]
+        self.assertIn("@message", error)
+        self.assertIn("@messages", error)
+
+        self.assertEqual(err_data["resource_url"], resources.api.url_for(resources.Flights,template_id=self.template_id_incorrect,
+                                               _external=False))
+
+    def test_add_flight(self):
+        """
+        Checks that POST Flight returns correct status code and adds the flight to the system
+        """
+        print("(" + self.test_add_flight.__name__ + ")", self.test_add_flight.__doc__)
+
+        # Make POST request
+        resp = self.client.post(resources.api.url_for(resources.Flights,template_id=self.flight_new['searchresultid'], _external=False),
+                                headers={"Content-Type": JSON},
+                                data=json.dumps(self.flight_new))
+
+        self.assertEqual(resp.status_code, 201)
+        self.assertIn("Location", resp.headers)
+        url = resp.headers["Location"]
+        resp2 = self.client.get(url)
+        self.assertEqual(resp2.status_code, 200)
+
+    def test_add_flight_existing_flightid(self):
+        """
+            Checks that POST Flight with an existing code returns correct status code
+        """
+        print("(" + self.test_add_flight_existing_flightid.__name__ + ")", self.test_add_flight_existing_flightid.__doc__)
+        resp = self.client.post(resources.api.url_for(resources.Flights, template_id=self.flight_new_existing_flightid['searchresultid']),
+                                headers={"Content-Type": JSON},
+                                data=json.dumps(self.flight_new_existing_flightid))
+
+        self.assertEqual(resp.status_code, 409)
+
+    def test_add_flight_malformed_gate(self):
+        """
+            Checks that POST Flight with a malformed gate returns correct status code
+        """
+        print("(" + self.test_add_flight_malformed_gate.__name__ + ")", self.test_add_flight_malformed_gate.__doc__)
+        resp = self.client.post(resources.api.url_for(resources.Flights, template_id=self.flight_new_malformed_gate['searchresultid']),
+                                headers={"Content-Type": JSON},
+                                data=json.dumps(self.flight_new_malformed_gate))
+
+        self.assertEqual(resp.status_code, 400)
+
+    def test_add_flight_nonexisting_templateid(self):
+        """
+            Checks that POST Flight with an nonexisting template id returns correct status code
+        """
+        print("(" + self.test_add_flight_nonexisting_templateid.__name__ + ")", self.test_add_flight_nonexisting_templateid.__doc__)
+        resp = self.client.post(resources.api.url_for(resources.Flights, template_id=self.flight_new_nonexisting_template['searchresultid']),
+                                headers={"Content-Type": JSON},
+                                data=json.dumps(self.flight_new_nonexisting_template))
+
+        self.assertEqual(resp.status_code, 400)
+
+class TemplateFlightTestCase(ResourcesAPITestCase):
+    template_id = 1234
+    templateflight = {
+        'searchid': 1234 ,
+        'origin': 'Finland',
+        'destination': 'France',
+        'departuretime': '20:52',
+        'arrivaltime': '23:40',}
+
+    template_id_incorrect = 65
+
+    def setUp(self):
+        super(TemplateFlightTestCase, self).setUp()
+
+        self.url = resources.api.url_for(resources.TemplateFlight,
+                                          template_id=self.template_id,
+                                          _external=False)
+        self.url_incorrect = resources.api.url_for(resources.TemplateFlight,
+                                               template_id=self.template_id_incorrect,
+                                               _external=False)
+
+    def test_url(self):
+        """
+        Checks that the URL points to the right resource
+        """
+        print("(" + self.test_url.__name__ + ")", self.test_url.__doc__)
+        url = "/flight-booking-system/api/template-flights/1234"
+        with resources.app.test_request_context(url):
+            rule = flask.request.url_rule
+            view_point = resources.app.view_functions[rule.endpoint].view_class
+            self.assertEqual(view_point, resources.TemplateFlight)
+
+    def test_wrong_url(self):
+        """
+        Checks that GET Template Flight return correct status code if given a
+        not existing template flight id
+        """
+        print("(" + self.test_wrong_url.__name__ + ")", self.test_wrong_url.__doc__)
+        resp = self.client.get(self.url_incorrect)
+        self.assertEqual(resp.status_code, 404)
+
+    def test_get_templateflight(self):
+        """
+        Checks that GET Template Flight returns correct status code and
+        response
+        """
+        print("(" + self.test_get_templateflight.__name__ + ")", self.test_get_templateflight.__doc__)
+        with resources.app.test_client() as client:
+            resp = client.get(self.url)
+            self.assertEqual(resp.status_code, 200)
+            data = json.loads(resp.data.decode("utf-8"))
+
+            self.assertIn("@namespaces", data)
+            self.assertIn("flight-booking-system", data["@namespaces"])
+            self.assertIn("name", data["@namespaces"]["flight-booking-system"])
+            self.assertIn(data["@namespaces"]["flight-booking-system"]["name"], LINK_RELATIONS_URL)
+
+            # Flight attributes
+            self.assertIn("tflight_id", data)
+            self.assertEqual(data["tflight_id"], self.template_id)
+            self.assertIn("dep_time", data)
+            self.assertEqual(data["dep_time"], self.templateflight["departuretime"])
+            self.assertIn("arr_time", data)
+            self.assertEqual(data["arr_time"], self.templateflight["arrivaltime"])
+            self.assertIn("origin", data)
+            self.assertEqual(data["origin"], self.templateflight["origin"])
+            self.assertIn("destination", data)
+            self.assertEqual(data["destination"], self.templateflight["destination"])
+
+            self.assertIn("@controls", data)
+
+            self.assertIn("self", data["@controls"])
+            self.assertIn("href", data["@controls"]["self"])
+            self.assertEqual(data["@controls"]["self"]["href"], resources.api.url_for(resources.TemplateFlight,
+                                                                                      template_id=self.template_id,_external=False))
+
+            self.assertIn("profile", data["@controls"])
+            self.assertIn("href", data["@controls"]["profile"])
+            self.assertEqual(data["@controls"]["profile"]["href"], FLIGHT_BOOKING_SYSTEM_TEMPLATE_FLIGHT_PROFILE)
+
+            self.assertIn("collection", data["@controls"])
+            self.assertIn("href", data["@controls"]["collection"])
+            self.assertEqual(data["@controls"]["collection"]["href"], resources.api.url_for(resources.TemplateFlights))
+            self.assertIn("method", data["@controls"]["collection"])
+            self.assertEqual(data["@controls"]["collection"]["method"].lower(), "get")
+
+            self.assertIn("flight-booking-system:flights-scheduled", data["@controls"])
+            self.assertIn("title", data["@controls"]["flight-booking-system:flights-scheduled"])
+    
+            self.assertIn("href", data["@controls"]["flight-booking-system:flights-scheduled"])
+            self.assertEqual(data["@controls"]["flight-booking-system:flights-scheduled"]["href"],
+                             resources.api.url_for(resources.Flights, template_id=self.template_id))
+            self.assertIn("encoding", data["@controls"]["flight-booking-system:flights-scheduled"])
+            self.assertEqual(data["@controls"]["flight-booking-system:flights-scheduled"]["encoding"], JSON)
+            self.assertIn("method", data["@controls"]["flight-booking-system:flights-scheduled"])
+            self.assertEqual(data["@controls"]["flight-booking-system:flights-scheduled"]["method"].lower(), "get")
+
+
+    def test_get_nonexisting_templateflight(self):
+        """
+        Checks that GET Template Flight returns correct status and data
+        with a nonexisting template flight id
+        """
+        print("(" + self.test_get_nonexisting_templateflight.__name__ + ")", self.test_get_nonexisting_templateflight.__doc__)
+
+        # Check that we have 404 not found
+        resp = self.client.get(self.url_incorrect)
+        self.assertEqual(resp.status_code, 404)
+        err_data = json.loads(resp.data.decode("utf-8"))
+
+        self.assertIn("@error", err_data)
+        self.assertIn("resource_url", err_data)
+
+        error = err_data["@error"]
+        self.assertIn("@message", error)
+        self.assertIn("@messages", error)
+
+        self.assertEqual(err_data["resource_url"],
+                         resources.api.url_for(resources.TemplateFlight, template_id=self.template_id_incorrect, _external=False))
+
+class TemplateFlightsTestCase(ResourcesAPITestCase):
+    template_id_1234 = 1234
+    template_id_1234 = {
+    'origin': 'Finland',
+    'destination': 'France',
+    'departuretime': '20:52',
+    'arrivaltime': '23:40',
+    }
+    new_tflight = {
+    'searchid':5665,
+    'origin': 'Oslo',
+    'destination': 'Oulu',
+    'departuretime': '19:30',
+    'arrivaltime': '20:30',
+    }
+
+    def setUp(self):
+        super(TemplateFlightsTestCase, self).setUp()
+        self.url = resources.api.url_for(resources.TemplateFlights)
+
+    def test_url(self):
+        """
+        Checks that the URL points to the right resource
+        """
+        print("(" + self.test_url.__name__ + ")", self.test_url.__doc__)
+        url = "/flight-booking-system/api/template-flights/"
+        with resources.app.test_request_context(url):
+            rule = flask.request.url_rule
+            view_point = resources.app.view_functions[rule.endpoint].view_class
+            self.assertEqual(view_point, resources.TemplateFlights)
+
+
+    def test_get_template_flights(self):
+        """
+        Checks that GET TemplateFlights returns correct status
+        and response
+        """
+        print("(" + self.test_get_template_flights.__name__ + ")", self.test_get_template_flights.__doc__)
+        with resources.app.test_client() as client:
+            resp = client.get(self.url)
+            self.assertEqual(resp.status_code, 200)
+            data = json.loads(resp.data.decode("utf-8"))
+
+            self.assertIn("@namespaces", data)
+            self.assertIn("flight-booking-system", data["@namespaces"])
+            self.assertIn("name", data["@namespaces"]["flight-booking-system"])
+            self.assertIn(data["@namespaces"]["flight-booking-system"]["name"], LINK_RELATIONS_URL)
+
+            # Reservation attributes
+            for tflight in data["items"]:
+                self.assertIn("search_id", tflight)
+                tflight_id = self.template_id_1234 = 1234
+
+                if tflight_id == 1234:
+                    self.assertIn("@controls", tflight)
+                    
+            self.assertIn("@controls", data)
+            self.assertIn("self", data["@controls"])
+            self.assertIn("href", data["@controls"]["self"])
+            self.assertEqual(data["@controls"]["self"]["href"], resources.api.url_for(resources.TemplateFlights))
+
+            self.assertIn("flight-booking-system:add-template-flight", data["@controls"])
+            self.assertIn("title", data["@controls"]["flight-booking-system:add-template-flight"])
+            self.assertIn("href", data["@controls"]["flight-booking-system:add-template-flight"])
+            self.assertEqual(data["@controls"]["flight-booking-system:add-template-flight"]["href"],
+                             resources.api.url_for(resources.TemplateFlights))
+            self.assertIn("encoding", data["@controls"]["flight-booking-system:add-template-flight"])
+            self.assertEqual(data["@controls"]["flight-booking-system:add-template-flight"]["encoding"],JSON)
+            self.assertIn("method", data["@controls"]["flight-booking-system:add-template-flight"])
+            self.assertEqual(data["@controls"]["flight-booking-system:add-template-flight"]["method"].lower(),
+                             "post")
+            self.assertIn("schemaUrl", data["@controls"]["flight-booking-system:add-template-flight"])
+            self.assertEqual(data["@controls"]["flight-booking-system:add-template-flight"]["schemaUrl"],
+                             TEMPLATE_FLIGHT_SCHEMA_URL)
+    
+    def test_add_templateflight(self):
+        """
+        Checks that POST Template Flight returns correct status code and adds the template flight to the system
+        """
+        print("(" + self.test_add_templateflight.__name__ + ")", self.test_add_templateflight.__doc__)
+
+        # Make POST request
+        resp = self.client.post(resources.api.url_for(resources.TemplateFlights),
+                                headers={"Content-Type": JSON},
+                                data=json.dumps(self.new_tflight))
+
+        self.assertEqual(resp.status_code, 201)
+        self.assertIn("Location", resp.headers)
+        url = resp.headers["Location"]
+        resp2 = self.client.get(url)
+        self.assertEqual(resp2.status_code, 200)
 
 if __name__ == "__main__":
     print("Start running tests")

@@ -606,18 +606,18 @@ class Connection(object):
             otherwise stated.
 
         """
-        tflight_id ='search' +str(row['tFlight_id'])
+        tflight_id =row['tflight_id']
         origin = row['origin']
         destination = row['destination']
-        dep_time = row['deptime']
-        arr_time=row['arrTime']
+        depTime = row['depTime']
+        arrTime=row['arrTime']
         
 
         templateflight = {'searchid': tflight_id,
                           'origin': origin,
                           'destination': destination,
-                          'departuretime': dep_time,
-                          'arrivaltime': arr_time }
+                          'departuretime': depTime,
+                          'arrivaltime': arrTime }
         return templateflight
 
     #Helper for Ticket
@@ -993,8 +993,8 @@ class Connection(object):
             :py:meth:`_create_template_flight_object`
         """
 
-        #SQL Statement for retrieving the template information for given tflight_id
-        query = 'SELECT * from TemplateFlight WHERE tflight_id = ?'
+        #SQL Statement for retrieving the template flight information for given tflight_id
+        query = "SELECT * from TemplateFlight WHERE tflight_id = ?"
     
         #Activate foreign key support
         self.set_foreign_keys_support()
@@ -1002,8 +1002,8 @@ class Connection(object):
         self.con.row_factory = sqlite3.Row
         cur = self.con.cursor()
         # Execute the SQL Statement to retrieve the template flight information.
-        # Create first the valuse
-        pvalue = (tflight_id, )
+        # Create first the values
+        pvalue = (tflight_id,)
         #execute the statement
         cur.execute(query, pvalue)
         #Process the response. Only one posible row is expected.
@@ -1012,6 +1012,31 @@ class Connection(object):
             return None
         else:
             return self._create_template_flight_object(row)
+
+    def get_template_flights(self):
+        """
+        Extracts all the template flights from the database.
+
+        :return: dictionary with the format provided in the method:
+            :py:meth:`_create_template_flight_object`
+        """
+        #SQL Statement for retrieving the template flights information
+        query = 'SELECT * FROM TemplateFlight'
+        #Activate foreign key support
+        self.set_foreign_keys_support()
+        #Cursor and row initialization
+        self.con.row_factory = sqlite3.Row
+        cur = self.con.cursor()
+        # Execute the SQL Statement to retrieve the ticket information.
+        cur.execute(query)
+        rows = cur.fetchall()
+        #Process the response. 
+        if rows is None:
+            return None
+        tflights = []
+        for row in rows:
+            tflights.append(self._create_template_flight_object(row))
+        return tflights
 
     def create_template_flight(self, templateflight):
         """
@@ -1025,12 +1050,12 @@ class Connection(object):
                     templateflight = {'searchid': tflight_id,
                                         'origin': origin,
                                         'destination': destination,
-                                        'departuretime': dep_time,
-                                        'arrivaltime': arr_time }
+                                        'departuretime': depTime,
+                                        'arrivaltime': arrTime }
                     
 
-                where:     
-                * ``searchid``: id of entered travel details (INT)
+                where: 
+                * ``searchid``: id of entered travel details (INT)    
                 * ``origin`: travel from (TEXT)
                 * ``destination``: travel to (TEXT)
                 * ``departuretime``: intended departure time (INT)
@@ -1043,19 +1068,18 @@ class Connection(object):
         query2 = 'INSERT INTO TemplateFlight (tflight_id, depTime, arrTime, origin, destination)\
                   VALUES(?,?,?,?,?)'
 
-        tflight_id = templateflight.get('searchid', None)
+        tflight_id = templateflight.get('searchid')
         origin = templateflight.get('origin', None)
         destination = templateflight.get('destination', None)
         depTime = templateflight.get('departuretime', None)
         arrTime = templateflight.get('arrivaltime', None)
-
 
         #Activate foreign key support
         self.set_foreign_keys_support()
         #Cursor and row initialization
         self.con.row_factory = sqlite3.Row
         cur = self.con.cursor()
-        
+
         #Execute the statement to check is the template flight exists
         pvalue =(tflight_id,)
         cur.execute(query1, pvalue) 
@@ -1072,6 +1096,7 @@ class Connection(object):
             return cur.lastrowid
         else:
             return None
+        
 
     def modify_template_flight(self, tflight_id, templateflight):
         """
@@ -1087,8 +1112,8 @@ class Connection(object):
 
                     templateflight = { 'origin': origin,
                                         'destination': destination,
-                                        'departuretime': dep_time,
-                                        'arrivaltime': arr_time }
+                                        'departuretime': depTime,
+                                        'arrivaltime': arrTime }
                     
 
                 where:     
@@ -1254,7 +1279,7 @@ class Connection(object):
                 * ``searchresultid``: id of entered travel details (INT)
                                      The result_id is a string with format ``result-\d{1,4}``.
                 * ``flightid``: id of a flight (INT)
-                               The flight_id is a string with format ``fl-\d{1,4}``.
+                                The flight_id is a string with format ``fl-\d{1,4}``.
                 * ``code``: reference for a reservation (TEXT)
                 * ``price``: date of reservation (INT)
                 * ``departuredate``: flight departure date (TEXT)
@@ -1266,13 +1291,15 @@ class Connection(object):
 
         :return: True when flight is created
         :raises ValueError when the gate name is not well formed
+        :raises: DateFormatException when the departure date and / arrival date is in incorrect format
         """
-
+        #SQL Statement to check if the flight id exists
         query1 = 'SELECT * from Flight WHERE flight_id = ?'
+        #SQL Statement to add values to new row
         query2 = 'INSERT INTO Flight (flight_id, code, price, gate, depDate, arrDate, nbInitialSeats, nbSeatsLeft, template_id)\
                   VALUES(?,?,?,?,?,?,?,?,?)'
+        
         #Extract information from the parameter passed
-
         flight_id = flight.get('flightid', None)
         template_id = flight.get('searchresultid', None)
         code = flight.get('code', None)
@@ -1283,9 +1310,23 @@ class Connection(object):
         nbInitialSeats = flight.get('totalseats', None)
         nbSeatsLeft = flight.get('seatsleft', None)
 
+        # Check that gate format 
         gate_pattern = re.compile("GATE\d{2}")
         if not gate_pattern.match(gate):
             raise ValueError("Gate is not well formed")
+
+        # Check departure date  and arrival date format
+        try:
+            depDate_date = datetime.strptime(depDate, DATE_FORMAT)
+            arrDate_date = datetime.strptime(arrDate, DATE_FORMAT)
+        except ValueError:
+            raise DateFormatException("departure date  and arrival date format are incorrect.")
+        # Check that arrival date is higher that departure date
+        if arrDate_date < depDate_date:
+            return ValueError("arrival date should be after departure date")   
+        #Check seats left is not higher that Total seats
+        if nbInitialSeats < nbSeatsLeft:
+            raise ValueError("Seats left cannot be higher that Total seats")
         
         #Activate foreign key support
         self.set_foreign_keys_support()
@@ -1366,6 +1407,18 @@ class Connection(object):
         if not pattern.match(gate):
             raise ValueError("Gate format is incorrect")
 
+        # Check departure date  and arrival date format
+        try:
+            depDate_date = datetime.strptime(depDate, DATE_FORMAT)
+            arrDate_date = datetime.strptime(arrDate, DATE_FORMAT)
+            # Check that arrival date is higher that departure date
+            if arrDate_date < depDate_date:
+                return False
+        except ValueError:
+            raise DateFormatException("departure date  and arrival date format are incorrect.")
+
+        if nbInitialSeats < nbSeatsLeft:
+            raise ValueError("Seats left cannot be higher that Total seats")
 
         #Activate foreign key support
         self.set_foreign_keys_support()
