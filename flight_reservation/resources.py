@@ -1293,7 +1293,7 @@ class TemplateFlights(Resource):
 
         # pick up rest of the mandatory fields
         try:
-            tflight_id= request_body["searchid"],
+            tflight_id = request_body["searchid"],
             origin = request_body["origin"],
             destination = request_body["destination"],
             dep_time = request_body["departuretime"],
