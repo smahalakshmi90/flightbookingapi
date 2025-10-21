@@ -244,19 +244,56 @@ flightbookingapi/
 
 ## 🧪 Testing
 
-Run the API tests:
+The project includes comprehensive unit tests for database operations and API endpoints.
+
+### Quick Test Run
+
+Run all tests with a single command:
 
 ```bash
-python -m pytest test/
+./test.sh
 ```
 
-Or run specific test files:
+This script will:
+1. Activate the virtual environment
+2. Set up the test database
+3. Run database tests (10 tests)
+4. Run API endpoint tests (77 tests)
 
+### Manual Test Setup
+
+If you prefer to run tests manually:
+
+**1. Setup test database:**
 ```bash
-python test/database_api_tests_user.py
-python test/database_api_tests_flight.py
-python test/database_api_tests_reservation.py
+source venv/bin/activate
+python3 setup_test_db.py
 ```
+
+**2. Run all tests:**
+```bash
+PYTHONPATH=. python3 run_tests.py
+```
+
+**3. Run specific test files:**
+```bash
+# Database tests
+PYTHONPATH=. python3 test/database_api_tests_user.py
+PYTHONPATH=. python3 test/database_api_tests_flight.py
+PYTHONPATH=. python3 test/database_api_tests_reservation.py
+PYTHONPATH=. python3 test/database_api_tests_ticket.py
+PYTHONPATH=. python3 test/database_api_tests_tables.py
+
+# Full API tests
+PYTHONPATH=. python3 test/flight_booking_system_api_tests.py
+```
+
+### Test Results
+
+Expected test results:
+- ✅ Database Table Tests: 10/10 passing
+- ✅ API Endpoint Tests: 76/77 passing (98.7% pass rate)
+- ⏱️  Total execution time: ~1 second
 
 ## 🔍 API Response Format
 

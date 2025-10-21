@@ -3,5 +3,6 @@
 *.pyc
 .DS_Store
 venv/
-*.db
+db/flight_test.db
 .vscode/
+*.log
