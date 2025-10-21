@@ -318,11 +318,6 @@ ls db/flight.db
 
 This project was created as part of a Programmable Web Project (Spring 2018).
 
-## 👥 Authors
-
-- Mahalakshmy Seetharaman
-- Jules Larue
-
 ## 🔗 Links
 
 - **GitHub Repository**: https://github.com/smahalakshmi90/flightbookingapi
