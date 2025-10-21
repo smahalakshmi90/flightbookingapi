@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" type="text/css" href="dist/bootstrap/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="css/open-iconic-bootstrap.min.css">
+  <link rel="stylesheet" type="text/css" href="dist/lobibox/css/lobibox.css" />
+  <link rel="stylesheet" type="text/css" href="css/flight_reservation_client.css" />
+  <title>Users administration</title>
+</head>
+
+<body>
+
+  <!-- Header -->
+  <div class="container">
+    <div class="jumbotron">
+      <h1>Flight reservation system</h1>
+      <p>Choose a user from the left sidebar to display and edit some information related to him/her.<br/>Press <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg> to add a new user.
+      </p>
+      <p>You can also navigate between the different sections (users and flights) with the two buttons below.</p>
+
+      <button type="button" data-toggle="tooltip" title="Users" class="btn-header" id="btn-users">
+        <img src="img/ic_users.png">
+      </button>
+      <button type="button" data-toggle="tooltip" title="Flights" class="btn-header" id="btn-flights">
+        <img src="img/ic_flight.png">
+      </button>
+    </div>
+    <!-- End header -->
+
+    <div class="container-fluid" id= "content">
+      <div class="row">
+        <nav class="col-md-3 sidebar bg-light">
+          <div id="sidebar" class="sidebar-sticky">
+            <!-- Side bar area -->
+            <h4 class="sidebar-heading d-flex justify-content-between text-muted">
+              <span>Users' list</span>
+              <a id="addUserButton" class="d-flex  text-muted" href="#" title="Add new user">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+              </a>
+            </h4>
+
+            <!-- The list of users -->
+            <ul class="nav d-flex flex-column" id="user_list">
+            </ul>
+
+          </div>
+        </nav>
+        <div class="col-md-9" id = "mainContent" >
+          <!-- Main content area -->
+
+          <!-- Content to display user data -->
+          <div id="userData">
+            <p class="lead">You can access and modify the user information</p>
+            <div class="section" id="userHeader">
+
+              <form action="#" id="user_form" class="container">
+                <div class="row">
+                  <div class="form_content col-md-7">
+                    <div class="form-group row">
+                      <label for="registrationdate" class="col-form-label col-md-3">Registered on</label>
+                      <div class="col-md-7">
+                        <input class="form-control-plaintext" type="text" name="registrationdate" id="registrationdate" readonly="readonly"/>
+                      </div>
+
+                      <a class="btn btn-primary align-middle" title="Click to access reservations" id="reservationsButton" role="button">
+                        Reservations <span id="reservationsNumber" class="badge badge-light">??</span>
+                      </a>
+                    </div>
+                  </div>
+                  <div class="commands col-md-2">
+                    <button id="deleteUser" class="deleteButton btn"  title="Remove user"><span class='oi oi-trash'></button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+              <div class="section" id="userProfile">
+                <!-- User info area -->
+                <h3 class="text-muted">User information</h3>
+
+                <!-- Form to edit the user info -->
+                <form action="#" id="edit_user_form" class="container">
+                  <div class="row">
+                    <div class="form_content col-md-8">
+
+                    </div>
+                    <div class="commands col-md-4">
+                      <button id="editUser" title="Edit user information" class="editButton btn" ><span class="oi oi-pencil"></span></button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+            <!-- End content for user data -->
+
+            <!-- Content to add a new user -->
+            <div id ="newUser">
+              <p class="lead">Please, fill the following fields to create a new user</p>
+              <form action="#" id="new_user_form">
+                <div class="form_content">
+
+                </div>
+                <div class="commands">
+                  <input id="createUser" type="button" class="createButton btn btn-primary" value="Create"/>
+                </div>
+              </form>
+            </div>
+            <!-- End content to add a new user -->
+
+
+          </div>
+        </div><!--end row-->
+      </div>
+
+      <footer class="footer container-fluid">
+        <div class="container-fluid">
+          <div class="footer-bottom">
+            <div class="row">
+              <div>Icons made by <a href="http://www.freepik.com" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a> is licensed by <a href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0" target="_blank">CC 3.0 BY</a></div>
+            </div>
+          </div>
+        </div>
+        <!--/.footer-bottom-->
+      </footer>
+    </div>
+  </body>
+
+  <script type="text/javascript" src="dist/jquery/js/jquery.min.js"></script>
+  <script type="text/javascript" src="dist/bootstrap/js/bootstrap.min.js"></script>
+  <script type="text/javascript" src="dist/lobibox/js/lobibox.js"></script>
+  <script type="text/javascript" src="js/flight_reservation_client.js"></script>
+  </html>

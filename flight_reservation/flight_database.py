@@ -8,7 +8,7 @@ Provides the database API to access the flight booking system persistent data.
 """
 
 """
-This code has been wriiten based on forum - exercise 1 
+This code has been wriiten based on forum - exercise 1
 """
 from datetime import datetime
 from time import gmtime, strftime
@@ -297,7 +297,7 @@ class Engine(object):
                                     reservation_id INTEGER NOT NULL, \
                                     seat TEXT, \
                                     FOREIGN KEY(reservation_id) REFERENCES Reservation(reservation_id) ON DELETE CASCADE)'
-        
+
         #Connects to the database. Gets a connection object
         con = sqlite3.connect(self.db_path)
         with con:
@@ -312,8 +312,8 @@ class Engine(object):
                 print("Error %s:" % excp.args[0])
                 return False
         return True
-        
-        
+
+
 class Connection(object):
     """
     API to access the Flight Booking database.
@@ -438,10 +438,10 @@ class Connection(object):
         userid = row['user_id']
         lastname =row['lastName']
         firstname = row['firstName']
-        phonenumber = row['phoneNumber'] 
-        email = row['email'] 
+        phonenumber = row['phoneNumber']
+        email = row['email']
         dateofBirth = row['birthDate']
-        gender = row['gender'] 
+        gender = row['gender']
         registrationDate = row['registrationDate']
 
         user = {'userid': userid,
@@ -454,7 +454,7 @@ class Connection(object):
                 'registrationDate': registrationDate}
 
         return user
-               
+
     def _create_user_list_object(self, row):
         """
         It takes a database Row and transform it into a python dictionary.
@@ -468,7 +468,7 @@ class Connection(object):
             * ``lastname``: lastname of the user (TEXT)
             * ``firstname``: firstname of the user (TEXT)
             * ``registrationDate``: date of user registration (INT)
-            
+
 
             Note that all values in the returned dictionary are string unless
             otherwise stated.
@@ -494,10 +494,10 @@ class Connection(object):
             * ``reservationdate``: date of reservation (TEXT)
             * ``userid``: id of the user making a reservation (INT)
             * ``flightid``: flightid for which reservation is made (INT)
-            
+
 
             Note that all values in the returned dictionary are string unless
-            otherwise stated.     
+            otherwise stated.
         """
         reservation_id = row['reservation_id']
         reference = row['reference']
@@ -560,7 +560,7 @@ class Connection(object):
             * ``gate``: gate number (TEXT)
             * ``totalseats``: total number of seats in the flight(INT)
             * ``seatsleft``: number seats vacant (INT)
-            
+
             Note that all values in the returned dictionary are string unless
             otherwise stated.
         """
@@ -601,7 +601,7 @@ class Connection(object):
             * ``destination``: travel to (TEXT)
             * ``departuretime``: intended departure time (INT)
             * ``arrivaltime``: intended arrival time (INT)
-            
+
             Note that all values in the returned dictionary are string unless
             otherwise stated.
 
@@ -611,7 +611,7 @@ class Connection(object):
         destination = row['destination']
         depTime = row['depTime']
         arrTime=row['arrTime']
-        
+
 
         templateflight = {'searchid': tflight_id,
                           'origin': origin,
@@ -637,7 +637,7 @@ class Connection(object):
             * ``gender``: passenger's gender (TEXT)
             * ``age``: passenger's age(INT)
             * ``seat``: seatnumber (INT)
-            
+
             Note that all values in the returned dictionary are string unless
             otherwise stated.
         """
@@ -648,7 +648,7 @@ class Connection(object):
         gender = row['gender']
         age = row['age']
         seat = row['seat']
-        
+
 
         ticket = {'ticketnumber': ticket_id,
                   'reservationid': reservation_id,
@@ -667,7 +667,7 @@ class Connection(object):
         """
         Extracts all the information of a user from the database.
 
-        :param user_id: The id of the user. 
+        :param user_id: The id of the user.
                         The user_id is a string with format ``user-\d{1,3}``.
         :return: dictionary with the format provided in the method:
             :py:meth:`_create_user_object`
@@ -675,7 +675,7 @@ class Connection(object):
         """
         #SQL Statement for retrieving the user information for given userid
         query = 'SELECT * from User WHERE user_id = ?'
-    
+
         #Activate foreign key support
         self.set_foreign_keys_support()
         #Cursor and row initialization
@@ -692,13 +692,13 @@ class Connection(object):
             return None
         else:
             return self._create_user_object(row)
-    
+
 
     def get_users(self):
         """
         Extracts all users in the database.
 
-        :return: list of Users of the database. 
+        :return: list of Users of the database.
         None is returned if the database has no users.
         """
         #Create the SQL Statement for retrieving the users
@@ -736,7 +736,7 @@ class Connection(object):
                             'dateofBirth': dateofBirth,
                             'gender': gender,
                             'registrationDate': registrationDate}
-                    
+
 
                 where:
 
@@ -756,14 +756,14 @@ class Connection(object):
         :raises: PhoneNumberFormatException when the phone number is in incorrect format
         :raises: EmailFormatException email is in incorrect format
         """
-        
+
         #SQL Statement to create the row in  users table
         #SQL Statement to check if the user already exists using email
         query1 = 'SELECT * from User WHERE email = ?'
         #SQL Statement to add values to new row
         query2 = 'INSERT INTO User (lastName, firstName, phoneNumber, email, birthDate, gender, registrationDate)\
                   VALUES(?,?,?,?,?,?,?)'
-                  
+
         #temporal variables for user table
         registration_date = int(round(time.time() * 1000))
         lastName = user.get('lastname', None)
@@ -802,11 +802,11 @@ class Connection(object):
         #Cursor and row initialization
         self.con.row_factory = sqlite3.Row
         cur = self.con.cursor()
-        
+
         #Execute the statement to check whether the a user with same email exists
         pvalue =(email,)
-        cur.execute(query1, pvalue) 
-          
+        cur.execute(query1, pvalue)
+
         #No value expected (no other user with that email expected)
         row = cur.fetchone()
         #If there is no user add rows in User
@@ -824,7 +824,7 @@ class Connection(object):
         """
         Modify the information of a user.
 
-        :param user_id: The id of the user. 
+        :param user_id: The id of the user.
                         The user_id is a string with format ``user-\d{1,3}``.
         :param dict user: a dictionary for user with the information to be created. The
                 dictionary has the following structure:
@@ -838,9 +838,9 @@ class Connection(object):
                             'dateofBirth': dateofBirth,
                             'gender': gender,
                             'registrationDate': registrationDate}
-                    
+
                 where:
-                
+
                     * ``userid``: user id for an user (INT)
                     * ``lastname``: lastname of the user (TEXT)
                     * ``firstname``: firstname of the user (TEXT)
@@ -860,12 +860,12 @@ class Connection(object):
         #Create the SQL Statements
         #SQL Statement for extracting the User using user_id
         query1 = 'SELECT * from User WHERE user_id = ?'
-           
+
         query2 = 'UPDATE User SET lastName = ?,firstName = ?, \
                                            phoneNumber = ?,email = ?, \
                                            birthDate = ?,gender = ?\
                                            WHERE user_id = ?'
-        
+
         firstName = user.get('firstname', None)
         lastName = user.get('lastname', None)
         phoneNumber = user.get('phonenumber', None)
@@ -909,7 +909,7 @@ class Connection(object):
         row = cur.fetchone()
         #if does not exist, return
         if row is None:
-            return False 
+            return False
         else:
             #execute the main statement
             pvalue = (lastName, firstName, phoneNumber, email, birthDate, gender, user_id)
@@ -925,7 +925,7 @@ class Connection(object):
         Remove all user information of the user with the user_id passed in as
         argument.
 
-        :param user_id: The id of the user. 
+        :param user_id: The id of the user.
                         The user_id is a string with format ``user-\d{1,3}``.
 
         :return: True if the user is deleted, False otherwise.
@@ -950,7 +950,7 @@ class Connection(object):
 
     def contains_user(self, user_id):
         """
-        :param user_id: The id of the user. 
+        :param user_id: The id of the user.
                         The user_id is a string with format ``user-\d{1,3}``.
         :return: True if the user is in the database. False otherwise
         """
@@ -987,7 +987,7 @@ class Connection(object):
         """
         Extracts all the information of a templateflight from the database.
 
-        :param tflight_id: The id of the templateflight. 
+        :param tflight_id: The id of the templateflight.
                         The tflight_id is a string with format ``search-\d{1,4}``.
         :return: dictionary with the format provided in the method:
             :py:meth:`_create_template_flight_object`
@@ -995,7 +995,7 @@ class Connection(object):
 
         #SQL Statement for retrieving the template flight information for given tflight_id
         query = "SELECT * from TemplateFlight WHERE tflight_id = ?"
-    
+
         #Activate foreign key support
         self.set_foreign_keys_support()
         #Cursor and row initialization
@@ -1030,7 +1030,7 @@ class Connection(object):
         # Execute the SQL Statement to retrieve the ticket information.
         cur.execute(query)
         rows = cur.fetchall()
-        #Process the response. 
+        #Process the response.
         if rows is None:
             return None
         tflights = []
@@ -1052,17 +1052,17 @@ class Connection(object):
                                         'destination': destination,
                                         'departuretime': depTime,
                                         'arrivaltime': arrTime }
-                    
 
-                where: 
-                * ``searchid``: id of entered travel details (INT)    
+
+                where:
+                * ``searchid``: id of entered travel details (INT)
                 * ``origin`: travel from (TEXT)
                 * ``destination``: travel to (TEXT)
                 * ``departuretime``: intended departure time (INT)
                 * ``arrivaltime``: intended arrival time (INT)
         Note that all values are string if they are not otherwise indicated.
 
-        :return: True when templateflight is created 
+        :return: True when templateflight is created
         """
         query1 = 'SELECT * from TemplateFlight WHERE tflight_id = ?'
         query2 = 'INSERT INTO TemplateFlight (tflight_id, depTime, arrTime, origin, destination)\
@@ -1082,13 +1082,13 @@ class Connection(object):
 
         #Execute the statement to check is the template flight exists
         pvalue =(tflight_id,)
-        cur.execute(query1, pvalue) 
-          
-        #No value expected 
+        cur.execute(query1, pvalue)
+
+        #No value expected
         row = cur.fetchone()
         #If there is no templateflight add rows in TemplateFlight
         if row is None:
-            #Add the row 
+            #Add the row
             # Execute the statement
             pvalue = (tflight_id, depTime, arrTime, origin, destination)
             cur.execute(query2, pvalue)
@@ -1096,16 +1096,16 @@ class Connection(object):
             return cur.lastrowid
         else:
             return None
-        
+
 
     def modify_template_flight(self, tflight_id, templateflight):
         """
         Modify the information of a templateflight.
 
-        :param tflight_id: The id of the templateflight. 
+        :param tflight_id: The id of the templateflight.
                         The tflight_id is a string with format ``search-\d{1,4}``.
         :param dict user: a dictionary for user with the information to be created.
-                          tflight_id must be given in order to make modifications. 
+                          tflight_id must be given in order to make modifications.
                           The dictionary has the following structure:
 
                 .. code-block:: javascript
@@ -1114,9 +1114,9 @@ class Connection(object):
                                         'destination': destination,
                                         'departuretime': depTime,
                                         'arrivaltime': arrTime }
-                    
 
-                where:     
+
+                where:
                 * ``origin`: travel from (TEXT)
                 * ``destination``: travel to (TEXT)
                 * ``departuretime``: intended departure time (INT)
@@ -1128,9 +1128,9 @@ class Connection(object):
         """
         #SQL statement for template flight existence and modifications
         query1 = 'SELECT * from TemplateFlight WHERE tflight_id = ?'
-           
+
         query2 = 'UPDATE TemplateFlight SET depTime = ?, arrTime = ?, origin = ?, destination  = ? \
-                                           WHERE tflight_id = ?' 
+                                           WHERE tflight_id = ?'
         #temporal variables
         origin = templateflight.get('origin', None)
         destination = templateflight.get('destination', None)
@@ -1141,7 +1141,7 @@ class Connection(object):
         #Cursor and row initialization
         self.con.row_factory = sqlite3.Row
         cur = self.con.cursor()
-        #Execute the statement 
+        #Execute the statement
         pvalue = (tflight_id,)
         cur.execute(query1, pvalue)
         #Only one value expected
@@ -1164,7 +1164,7 @@ class Connection(object):
         Remove all templateflight information with the tflight_id passed in as
         argument.
 
-        :param tflight_id: The id of the templateflight. 
+        :param tflight_id: The id of the templateflight.
                         The tflight_id is a string with format ``search-\d{1,4}``.
 
         :return: True if the template flight is deleted, False otherwise.
@@ -1189,7 +1189,7 @@ class Connection(object):
 
     def contains_template_flight(self, tflight_id):
         """
-        :param tflight_id: The id of the templateflight. 
+        :param tflight_id: The id of the templateflight.
                         The tflight_id is a string with format ``search-\d{1,4}``.
         :return: True if the templateflight is in the database. False otherwise
         """
@@ -1200,14 +1200,14 @@ class Connection(object):
         """
         Extracts all the information of a flight from the database using flight_id.
 
-        :param flight_id: The id of the flight. 
+        :param flight_id: The id of the flight.
                         The flight_id is a string with format ``fl-\d{1,4}``.
         :return: dictionary with the format provided in the method:
             :py:meth:`_create_flight_object`
         """
         #SQL Statement for retrieving the flight information for given flight_id
         query = 'SELECT * from Flight WHERE flight_id = ?'
-    
+
         #Activate foreign key support
         self.set_foreign_keys_support()
         #Cursor and row initialization
@@ -1229,14 +1229,14 @@ class Connection(object):
         """
         Extracts all the information of flights from the database using template_id.
 
-        :param template_id: The id of the templateflight. 
+        :param template_id: The id of the templateflight.
                         The template_id is a string with format ``result-\d{1,4}``.
         :return: dictionary with the format provided in the method:
             :py:meth:`_create_flight_object`
         """
         #SQL Statement for retrieving the flights information for given templateid
         query = 'SELECT * from Flight WHERE template_id = ?'
-    
+
         #Activate foreign key support
         self.set_foreign_keys_support()
         #Cursor and row initialization
@@ -1247,11 +1247,11 @@ class Connection(object):
         pvalue = (template_id, )
         #execute the statement
         cur.execute(query, pvalue)
-        #Process the response. 
+        #Process the response.
         rows = cur.fetchall()
         if rows is None:
             return None
-        flights = [] 
+        flights = []
         for row in rows:
             flights.append(self._create_flight_object(row))
         return flights
@@ -1275,7 +1275,7 @@ class Connection(object):
                                 'gate':gate ,
                                 'totalseats':total_seats,
                                 'seatsleft':seats_left}
-                where:     
+                where:
                 * ``searchresultid``: id of entered travel details (INT)
                                      The result_id is a string with format ``result-\d{1,4}``.
                 * ``flightid``: id of a flight (INT)
@@ -1298,7 +1298,7 @@ class Connection(object):
         #SQL Statement to add values to new row
         query2 = 'INSERT INTO Flight (flight_id, code, price, gate, depDate, arrDate, nbInitialSeats, nbSeatsLeft, template_id)\
                   VALUES(?,?,?,?,?,?,?,?,?)'
-        
+
         #Extract information from the parameter passed
         flight_id = flight.get('flightid', None)
         template_id = flight.get('searchresultid', None)
@@ -1310,7 +1310,7 @@ class Connection(object):
         nbInitialSeats = flight.get('totalseats', None)
         nbSeatsLeft = flight.get('seatsleft', None)
 
-        # Check that gate format 
+        # Check that gate format
         gate_pattern = re.compile("GATE\d{2}")
         if not gate_pattern.match(gate):
             raise ValueError("Gate is not well formed")
@@ -1323,22 +1323,22 @@ class Connection(object):
             raise DateFormatException("departure date  and arrival date format are incorrect.")
         # Check that arrival date is higher that departure date
         if arrDate_date < depDate_date:
-            return ValueError("arrival date should be after departure date")   
+            return ValueError("arrival date should be after departure date")
         #Check seats left is not higher that Total seats
         if nbInitialSeats < nbSeatsLeft:
             raise ValueError("Seats left cannot be higher that Total seats")
-        
+
         #Activate foreign key support
         self.set_foreign_keys_support()
         #Cursor and row initialization
         self.con.row_factory = sqlite3.Row
         cur = self.con.cursor()
-        
+
         #Execute the statement to check if a flight with same id exists
         pvalue =(flight_id,)
-        cur.execute(query1, pvalue) 
-          
-        #No value expected 
+        cur.execute(query1, pvalue)
+
+        #No value expected
         row = cur.fetchone()
         #If there is no flight add rows in Flight
         if row is None:
@@ -1357,10 +1357,10 @@ class Connection(object):
         """
         Modify the information of a flight.
 
-        :param flight_id: The id of the flight. 
+        :param flight_id: The id of the flight.
                         The flight_id is a string with format ``fl-\d{1,4}``.
         :param dict flight: a dictionary for user with the information to be created.
-                          flight_id must be given in order to make modifications. 
+                          flight_id must be given in order to make modifications.
                           The dictionary has the following structure:
 
                 .. code-block:: javascript
@@ -1373,7 +1373,7 @@ class Connection(object):
                                 'gate':gate ,
                                 'totalseats':total_seats,
                                 'seatsleft':seats_left}
-                where:     
+                where:
                 * ``searchresultid``: id of entered travel details (INT)
                                     The result_id is a string with format ``result-\d{1,4}``.
                 * ``code``: reference for a reservation (TEXT)
@@ -1388,10 +1388,10 @@ class Connection(object):
         :return: True when flight is modified or False is the flight_id does not exist
         """
         query1 = 'SELECT * from Flight WHERE flight_id = ?'
-           
+
         query2 = 'UPDATE Flight SET code = ?, price = ?, gate = ?, depDate = ?, \
                                         arrDate = ?, nbInitialSeats = ?, nbSeatsLeft = ?, template_id = ? \
-                                           WHERE flight_id = ?' 
+                                           WHERE flight_id = ?'
         #Extract information from the parameter passed
         template_id = flight.get('searchresultid')
         code = flight.get('code', None)
@@ -1448,7 +1448,7 @@ class Connection(object):
         Remove all flight information of a flight with the flight_id passed in as
         argument.
 
-        :param tflight_id: The id of the templateflight. 
+        :param tflight_id: The id of the templateflight.
                         The tflight_id is a string with format ``fl\d{1,4}``.
         :return: True if the flight is deleted, False otherwise.
         """
@@ -1471,7 +1471,7 @@ class Connection(object):
 
     def contains_flight(self, flight_id):
         """
-        :param flight_id: The id of the flight. 
+        :param flight_id: The id of the flight.
                         The flight_id is a string with format ``fl-\d{1,4}``.
         :return: True if the flight is in the database. False otherwise
         """
@@ -1482,7 +1482,7 @@ class Connection(object):
         """
         Extracts all the information of a reservation from the database.
 
-        :param reservation_id: The id of the reservation. 
+        :param reservation_id: The id of the reservation.
                         The reservation_id is a string with format ``res-\d{1,2}``.
         :return: dictionary with the format provided in the method:
             :py:meth:`_create_reservation_object`
@@ -1535,7 +1535,7 @@ class Connection(object):
 
         Extracts all the information of a reservation from the database of a particular user.
 
-        :param creator_id: The id of the user. 
+        :param creator_id: The id of the user.
                         The creator_id is a string with format ``bookedby-\d{1,3}``.
         :return: dictionary with the format provided in the method:
             :py:meth:`_create_reservation_object`
@@ -1564,7 +1564,7 @@ class Connection(object):
         """
         Extracts all the information of a reservation from the database of a particular flight.
 
-        :param flight_id: The id of the flight. 
+        :param flight_id: The id of the flight.
                         The flight_id is a string with format ``fl-\d{1,4}``.
         :return: dictionary with the format provided in the method:
             :py:meth:`_create_reservation_object`
@@ -1603,15 +1603,15 @@ class Connection(object):
                                     'reservationdate' : reservation_date,
                                     'userid' : creator_id,
                                     'flightid': flight_id}
-                    
 
-                where:     
-                * ``reservationid``: reservation id for a reservation (INT)                 
+
+                where:
+                * ``reservationid``: reservation id for a reservation (INT)
                 * ``reference``: reference for a reservation (TEXT)
                 * ``reservationdate``: date of reservation (TEXT)
                 * ``userid``: id of the user making a reservation (INT)
                 * ``flightid``: flightid for which reservation is made (INT)
-                                
+
 
         :return: True when reservation is created
         """
@@ -1648,11 +1648,11 @@ class Connection(object):
         Modify the information of a reservation.
 
         :param str reservationid: The reservationid is a string with format ``res-\d{1,2}``.
-        :param str reference: 
+        :param str reference:
         :param str userid: The userid is a string with format ``bookedby-\d{1,3}``.
         :param str flightid: The flightid is a string with format ``fl-\d{1,4}``.
-                    
-                where:     
+
+                where:
                 * ``reservationid``: reservation id for a reservation (INT)
                 * ``reference``: reference for a reservation (TEXT)
                 * ``userid``: id of the user making a reservation (INT)
@@ -1664,9 +1664,9 @@ class Connection(object):
         """
 
         query1 = 'SELECT * from Reservation WHERE reservation_id = ?'
-           
+
         query2 = 'UPDATE Reservation SET reference = ?,creator_id = ?, flight_id = ? \
-                                           WHERE reservation_id = ?' 
+                                           WHERE reservation_id = ?'
         #temporal variables
         reservation_id = reservationid
         reference = reference
@@ -1723,7 +1723,7 @@ class Connection(object):
 
     def contains_reservation(self, reservation_id):
         """
-        :param reservation_id: The id of the reservation. 
+        :param reservation_id: The id of the reservation.
                         The reservation_id is a string with format ``res-\d{1,2}``.
         :return: True if the reservation is in the database. False otherwise
         """
@@ -1734,7 +1734,7 @@ class Connection(object):
         """
         Extracts all the information of a ticket from the database.
 
-        :param ticket_id: The id of the ticket. 
+        :param ticket_id: The id of the ticket.
                         The ticket_id is a string with format ``ticketnum-\d{1,4}``.
         :return: dictionary with the format provided in the method:
             :py:meth:`_create_ticket_object`
@@ -1752,13 +1752,13 @@ class Connection(object):
         cur.execute(query, pvalue)
         self.con.commit()
         row = cur.fetchone()
-        #Process the response. 
+        #Process the response.
         if row is None:
             return None
         else:
             return self._create_ticket_object(row)
 
-     
+
     def get_tickets(self):
         """
         Extracts all the information of the tickets from the database.
@@ -1776,7 +1776,7 @@ class Connection(object):
         # Execute the SQL Statement to retrieve the ticket information.
         cur.execute(query)
         rows = cur.fetchall()
-        #Process the response. 
+        #Process the response.
         if rows is None:
             return None
         tickets = []
@@ -1788,7 +1788,7 @@ class Connection(object):
         """
         Extracts all the information of a ticket from the database of a particular reservation.
 
-        :param reservation_id: The id of the reservation. 
+        :param reservation_id: The id of the reservation.
                         The reservation_id is a string with format ``res-\d{1,2}``
         :return: dictionary with the format provided in the method:
             :py:meth:`_create_ticket_object`
@@ -1796,7 +1796,7 @@ class Connection(object):
 
         #SQL Statement for retrieving the ticket information for given reservationid
         query = 'SELECT * from Ticket WHERE reservation_id = ?'
-    
+
         #Activate foreign key support
         self.set_foreign_keys_support()
         #Cursor and row initialization
@@ -1806,7 +1806,7 @@ class Connection(object):
         pvalue = (reservation_id, )
         #execute the statement
         cur.execute(query, pvalue)
-        #Process the response. 
+        #Process the response.
         rows = cur.fetchall()
         if rows is None:
             return None
@@ -1830,7 +1830,7 @@ class Connection(object):
                                 'lastname': lastname,
                                 'gender': gender,
                                 'age':age}
-                    
+
             where:
             * ``ticketnumber``: user id for an user (INT)
             * ``reservationid``: reservation id of a reservation (INT)
@@ -1838,7 +1838,7 @@ class Connection(object):
             * ``firstname``: firstname of the passenger (TEXT)
             * ``gender``: passenger's gender (TEXT)
             * ``age``: passenger's age(INT)
-       
+
         Note that all values are string if they are not otherwise indicated.
 
         :return: None if the ticket can not be created; the id of the new ticket otherwise
@@ -1850,25 +1850,25 @@ class Connection(object):
         query4 = 'UPDATE Flight SET nbSeatsLeft = ? WHERE flight_id = ?'
         query = 'INSERT INTO Ticket (ticket_id, firstName, lastName, gender, age, reservation_id, seat )\
                   VALUES(?,?,?,?,?,?,?)'
-    
+
         ticket_id = ticket.get('ticketnumber', None)
         reservation_id = ticket.get('reservationid', None)
         firstName = ticket.get('firstname', None)
         lastName = ticket.get('lastname', None)
         gender = ticket.get('gender', None)
         age = ticket.get('age', None)
-        
+
         #Activate foreign key support
         self.set_foreign_keys_support()
         #Cursor and row initialization
         self.con.row_factory = sqlite3.Row
         cur = self.con.cursor()
-        
+
         #Execute the statement to check if the ticket already exists
         pvalue =(ticket_id,)
-        cur.execute(query1, pvalue) 
-        
-        #No value expected 
+        cur.execute(query1, pvalue)
+
+        #No value expected
         row = cur.fetchone()
         #If there is no ticket add rows in Ticket
         if row is None:
@@ -1908,10 +1908,10 @@ class Connection(object):
         """
         Modify the information of a ticket.
 
-        :param ticket_id: The id of the ticket. 
+        :param ticket_id: The id of the ticket.
                         The ticket_id is a string with format ``ticketnum-\d{1,4}``.
         :param dict ticket: a dictionary for ticket with the information to be created.
-                          ticket_id must be given in order to make modifications. 
+                          ticket_id must be given in order to make modifications.
                           The dictionary has the following structure:
 
                 .. code-block:: javascript
@@ -1921,22 +1921,22 @@ class Connection(object):
                                 'lastname': lastname,
                                 'gender': gender,
                                 'age':age}
-                   
+
             where:
-            * ``reservationid``: reservation id of a reservation 
+            * ``reservationid``: reservation id of a reservation
                                 The reservationd is a string with format ``res-\d{1,2}``
             * ``lastname``: lastname of the passenger (TEXT)
             * ``firstname``: firstname of the passenger (TEXT)
             * ``gender``: passenger's gender (TEXT)
             * ``age``: passenger's age(INT)
-    
+
         Note that all values are string if they are not otherwise indicated.
 
         :return: True when ticket is modified or False is the ticket_id does not exist
         """
 
         query1 = 'SELECT * from Ticket WHERE ticket_id = ?'
-           
+
         query2 = 'UPDATE Ticket SET firstName = ?, lastName = ?, gender = ? ,\
                                         age = ?, reservation_id = ? \
                                            WHERE ticket_id = ?'
@@ -1951,7 +1951,7 @@ class Connection(object):
         #Cursor and row initialization
         self.con.row_factory = sqlite3.Row
         cur = self.con.cursor()
-        #Execute the statement 
+        #Execute the statement
         pvalue = (ticket_id,)
         cur.execute(query1, pvalue)
         #Only one value expected
@@ -2016,7 +2016,7 @@ class Connection(object):
 
     def contains_ticket(self, ticket_id):
         """
-        :param ticket_id: The id of the ticket. 
+        :param ticket_id: The id of the ticket.
                         The ticket_id is a string with format ``ticketnum-\d{1,4}``.
         :return: True if the ticket is in the database. False otherwise
         """

@@ -1,0 +1,36 @@
+{
+    "type": "object",
+    "properties": {
+        "firstName": {
+            "title": "First name",
+            "description": "User's first name",
+            "type": "string"
+        },
+        "lastName": {
+            "title": "Last name",
+            "description": "User's family name (from http://schema.org/Person)",
+            "type": "string"
+        },
+        "phoneNumber": {
+            "title": "Phone number",
+            "description": "User's phone number (from http://schema.org/Person)",
+            "type": "string"
+        },
+        "email": {
+            "title": "Email address",
+            "description": "User's email address (from http://schema.org/Person)",
+            "type": "string"
+        },
+        "birthDate": {
+            "title": "Date of birth",
+            "description": "User's birth date (YYYY-MM-dd)",
+            "type": "string"
+        },
+        "gender": {
+            "title": "Gender",
+            "description": "User's gender (from http://schema.org/Person)",
+            "type": "string"
+        }
+    },
+    "required": ["firstName", "lastName", "phoneNumber", "email", "birthDate", "gender"]
+}

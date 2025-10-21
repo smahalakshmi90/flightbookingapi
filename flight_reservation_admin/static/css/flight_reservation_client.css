@@ -1,0 +1,31 @@
+.btn-header {
+    padding: 16px;
+    margin-top: 16px;
+    margin-right: 24px;
+    margin-bottom: 24px;
+    cursor: pointer;
+    background: #fff;
+    border: none;
+    border-radius: 8px;
+}
+
+.btn-header:hover {
+    background: #aaa;
+}
+
+#sidebar {
+    padding: 16px;
+}
+
+footer {
+    margin: 16px;
+    padding: 8px;
+}
+
+#sidebar ul li.active {
+    background-color: #9ec3e6;
+}
+
+#sidebar .oi {
+	padding-right: 1rem;
+}

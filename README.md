@@ -1,3 +1,18 @@
+RUN THE SERVER
+------------------
+To run the server, go to the root folder of the project. Then, run the main.py file:
+
+> python3 main.py
+
+The API can be accessed at the following URL:
+/flight-booking-system/api/
+
+RUN THE API TESTS
+------------------
+To run the api tests, got to the root of the project. Then, execute the following command:
+
+> python3 -m test.flight_booking_system_api_tests
+
 CREATE THE DATABASE
 ------------------
 
@@ -22,7 +37,7 @@ To populate the database with data, in the project root folder:
 
 > sqlite3 \> .read db/flight_data_dump.sql
 
-RUNNING THE TESTS
+RUNNING THE DATABASE TESTS
 -----------------
 
 In the project root folder:

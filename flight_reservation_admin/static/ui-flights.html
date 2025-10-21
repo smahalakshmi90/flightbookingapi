@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" type="text/css" href="dist/bootstrap/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="css/open-iconic-bootstrap.min.css">
+  <link rel="stylesheet" type="text/css" href="dist/lobibox/css/lobibox.css" />
+  <link rel="stylesheet" type="text/css" href="css/flight_reservation_client.css" />
+  <title>Template Flights and Flights administration</title>
+</head>
+
+<body>
+
+  <!-- Header -->
+  <div class="container">
+    <div class="jumbotron">
+      <h1>Flight reservation system</h1>
+      <p>Choose a flight from the left sidebar to display information and/or add flight.
+        <br/>Press <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg> to add a new flight.
+      </p>
+      <p>You can also navigate to template flights.</p>
+
+      <button type="button" data-toggle="tooltip" title="TemplateFlights" class="btn-header" id="btn-tflight">
+        <img src="img/ic_tflight.png">
+      </button>
+      <ul class="nav d-flex flex-column" id="tflight_list">
+            </ul>
+    </div>
+    <div id="tflightData">
+            <p class="lead">You can access the template flight information</p>
+            <div class="section" id="tflightHeader">
+
+              <form action="#" id="flight_form" class="container">
+                <div class="row">
+                  <div class="commands col-md-2">
+                    </div>
+                  </div>
+                </form>
+              </div>
+              <div class="section" id="tflightProfile">
+                <!-- User info area -->
+                <h3 class="text-muted">Template Flight information</h3>
+              </div>
+    <!-- End header -->
+
+    <div class="container-fluid" id= "content">
+      <div class="row">
+        <nav class="col-md-3 sidebar bg-light">
+          <div id="sidebar" class="sidebar-sticky">
+            <!-- Side bar area -->
+            <h4 class="sidebar-heading d-flex justify-content-between text-muted">
+              <span>Flight list</span>
+              <a id="addFlightButton" class="d-flex  text-muted" href="#" title="Add new flight">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+              </a>
+            </h4>
+
+            <!-- The list of flights -->
+            <ul class="nav d-flex flex-column" id="flight_list">
+            </ul>
+
+          </div>
+        </nav>
+        <div class="col-md-9" id = "mainContent" >
+          <!-- Main content area -->
+
+          <!-- Content to display flight data -->
+          <div id="flightData">
+            <p class="lead">You can access the flight information</p>
+            <div class="section" id="flightHeader">
+
+              <form action="#" id="flight_form" class="container">
+                <div class="row">
+                  <div class="commands col-md-2">
+                    </div>
+                  </div>
+                </form>
+              </div>
+              <div class="section" id="flightProfile">
+                <!-- User info area -->
+                <h3 class="text-muted">Flight information</h3>
+              </div>
+
+            </div>
+            <!-- End content for flight data -->
+
+            <!-- Content to add a new flight -->
+            <div id ="newFlight">
+              <p class="lead">Please, fill the following fields to create a new flight</p>
+              <form action="#" id="new_flight_form">
+                <div class="form_content">
+                </div>
+                <div class="commands">
+                  <input id="createFlight" type="button" class="createButton btn btn-primary" value="Create"/>
+                </div>
+              </form>
+            </div>
+            <!-- End content to add a new flight -->
+
+
+          </div>
+        </div><!--end row-->
+      </div>
+
+      <footer class="footer container-fluid">
+        <div class="container-fluid">
+          <div class="footer-bottom">
+            <div class="row">
+              <div>Icons made by <a href="http://www.freepik.com" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a> is licensed by <a href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0" target="_blank">CC 3.0 BY</a></div>
+            </div>
+          </div>
+        </div>
+        <!--/.footer-bottom-->
+      </footer>
+    </div>
+  </body>
+
+  <script type="text/javascript" src="dist/jquery/js/jquery.min.js"></script>
+  <script type="text/javascript" src="dist/bootstrap/js/bootstrap.min.js"></script>
+  <script type="text/javascript" src="dist/lobibox/js/lobibox.js"></script>
+  <script type="text/javascript" src="js/flight_reservation_client.js"></script>
+  </html>

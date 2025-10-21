@@ -1170,6 +1170,446 @@ class UserReservationsTestCase(ResourcesAPITestCase):
         self.assertEqual(resp.headers.get("Content-Type", None),
                          "{};{}".format(MASONJSON, FLIGHT_BOOKING_SYSTEM_RESERVATION_PROFILE))
 
+class ReservationTicketsTestCase(ResourcesAPITestCase):
+
+    reservation11_id = 11
+    reservation11_list_object = {
+        'reference': 'AB12CS',
+        'reservationdate': '2018-02-20'
+    }
+    ticket11_id = 1010
+    ticket11_list_object = {
+        'firstName':'John',
+        'familyName':'Tilton'
+        }
+    wrong_reservation_id = 999
+
+    def setUp(self):
+        super(ReservationTicketsTestCase, self).setUp()
+
+        self.url1 = resources.api.url_for(resources.ReservationTickets,
+                                          reservation_id = self.reservation11_id,
+                                          _external=False)
+        self.url_wrong = resources.api.url_for(resources.ReservationTickets,
+                                               reservation_id=self.wrong_reservation_id,
+                                               _external=False)
+
+    def test_url(self):
+        """
+        Checks that the URL points to the right resource
+        """
+        print("(" + self.test_url.__name__ + ")", self.test_url.__doc__)
+        url = "/flight-booking-system/api/reservations/11/tickets"
+        with resources.app.test_request_context(url):
+            rule = flask.request.url_rule
+            view_point = resources.app.view_functions[rule.endpoint].view_class
+            self.assertEqual(view_point, resources.ReservationTickets)
+
+    def test_wrong_url(self):
+        """
+        Checks that GET ReservationTickets return correct status code if given a
+        wrong reservation id (non existing)
+        """
+        print("(" + self.test_wrong_url.__name__ + ")", self.test_wrong_url.__doc__)
+        resp = self.client.get(self.url_wrong)
+        self.assertEqual(resp.status_code, 404)
+
+
+    def test_get_reservation_tickets(self):
+        """
+        Checks that GET ReservationTickets returns correct status
+        and response
+        """
+
+        print("(" + self.test_get_reservation_tickets.__name__ + ")", self.test_get_reservation_tickets.__doc__)
+        with resources.app.test_client() as client:
+            resp = client.get(self.url1)
+            self.assertEqual(resp.status_code, 200)
+            data = json.loads(resp.data.decode("utf-8"))
+
+            self.assertIn("@namespaces", data)
+            self.assertIn("flight-booking-system", data["@namespaces"])
+            self.assertIn("name", data["@namespaces"]["flight-booking-system"])
+            self.assertIn(data["@namespaces"]["flight-booking-system"]["name"], LINK_RELATIONS_URL)
+
+            # Reservation attributes
+            for ticket in data["items"]:
+                self.assertIn("ticket_id", ticket)
+
+                ticket_id = ticket["ticket_id"]
+                if ticket_id == 1010:
+                    self.assertEqual(ticket["ticket_id"], self.ticket11_id)
+                    self.assertIn("firstName", ticket)
+                    self.assertEqual(ticket["firstName"], self.ticket11_list_object["firstName"])
+                    self.assertIn("familyName", ticket)
+                    self.assertEqual(ticket["familyName"], self.ticket11_list_object["familyName"])
+
+                self.assertIn("@controls", ticket)
+                self.assertIn("self", ticket["@controls"])
+                self.assertIn("href", ticket["@controls"]["self"])
+                self.assertEqual(ticket["@controls"]["self"]["href"], 
+                                    resources.api.url_for(resources.Ticket,
+                                                          ticket_id=ticket["ticket_id"],
+                                                          _external=False))
+
+                self.assertIn("profile", ticket["@controls"])
+                self.assertIn("href", ticket["@controls"]["profile"])
+                self.assertEqual(ticket["@controls"]["profile"]["href"], FLIGHT_BOOKING_SYSTEM_TICKET_PROFILE)
+
+                self.assertIn("flight-booking-system:delete", ticket["@controls"])
+                self.assertIn("title", ticket["@controls"]["flight-booking-system:delete"])
+                self.assertIn("href", ticket["@controls"]["flight-booking-system:delete"])
+                self.assertEqual(ticket["@controls"]["flight-booking-system:delete"]["href"],
+                                 resources.api.url_for(resources.Ticket,
+                                                       ticket_id=ticket["ticket_id"],
+                                                       _external=False))
+                self.assertIn("encoding", ticket["@controls"]["flight-booking-system:delete"])
+                self.assertEqual(ticket["@controls"]["flight-booking-system:delete"]["encoding"], JSON)
+                self.assertIn("method", ticket["@controls"]["flight-booking-system:delete"])
+                self.assertEqual(ticket["@controls"]["flight-booking-system:delete"]["method"].lower(), "delete")
+
+                self.assertIn("edit", ticket["@controls"])
+                self.assertIn("title", ticket["@controls"]["edit"])
+                self.assertIn("href", ticket["@controls"]["edit"])
+                self.assertEqual(ticket["@controls"]["edit"]["href"],
+                                    resources.api.url_for(resources.Ticket,
+                                                          ticket_id=ticket["ticket_id"],
+                                                          _external=False))
+                self.assertIn("encoding", ticket["@controls"]["edit"])
+                self.assertEqual(ticket["@controls"]["edit"]["encoding"], JSON)
+                self.assertIn("method", ticket["@controls"]["edit"])
+                self.assertEqual(ticket["@controls"]["edit"]["method"].lower(), "put")
+                self.assertIn("schemaUrl", ticket["@controls"]["edit"])
+                self.assertEqual(ticket["@controls"]["edit"]["schemaUrl"], TICKET_SCHEMA_URL)
+
+            self.assertIn("@controls", data)
+            self.assertIn("self", data["@controls"])
+            self.assertIn("href", data["@controls"]["self"])
+            self.assertEqual(data["@controls"]["self"]["href"], 
+                            resources.api.url_for(resources.ReservationTickets,
+                                                  reservation_id = self.reservation11_id,
+                                                  _external=False))
+
+            self.assertIn("collection", data["@controls"])
+            self.assertIn("href", data["@controls"]["collection"])
+            self.assertEqual(data["@controls"]["collection"]["href"], 
+                                    resources.api.url_for(resources.Reservations,
+                                                          _external=False))
+
+
+    def test_get_reservation_tickets_mimetype(self):
+        """
+        Checks that GET ReservationTickets return correct status code and data format
+        """
+        print("(" + self.test_get_reservation_tickets_mimetype.__name__ + ")", self.test_get_reservation_tickets_mimetype.__doc__)
+
+        # Check that I receive status code 200
+        resp = self.client.get(self.url1)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.headers.get("Content-Type", None),
+                         "{};{}".format(MASONJSON, FLIGHT_BOOKING_SYSTEM_TICKET_PROFILE))
+
+
+class TicketTestCase(ResourcesAPITestCase):
+    ticket_id = 1010
+    ticket1 = {
+        "ticket_id": 1010,
+        "firstName": "John",
+        "familyName": "Tilton",
+        "age": 20,
+        "gender": "male",
+        "seat": "21A",
+        "reservation_id": 11,
+    }
+    modified_ticket1_req = {
+        "firstName": "James",
+        "familyName": "Watt",
+        "age": 49,
+        "gender": "male",
+        "seat": "21A",
+    }
+
+    ticket_id_wrong = 99
+
+    def setUp(self):
+        super(TicketTestCase, self).setUp()
+        self.url1 = resources.api.url_for(resources.Ticket,
+                                          ticket_id=self.ticket_id,
+                                          _external=False)
+        self.url_wrong = resources.api.url_for(resources.Ticket,
+                                               ticket_id=self.ticket_id_wrong,
+                                               _external=False)
+
+    def test_url(self):
+        """
+        Checks that the URL points to the right resource
+        """
+        print("(" + self.test_url.__name__ + ")", self.test_url.__doc__)
+        url = "/flight-booking-system/api/tickets/1010"
+        with resources.app.test_request_context(url):
+            rule = flask.request.url_rule
+            view_point = resources.app.view_functions[rule.endpoint].view_class
+            self.assertEqual(view_point, resources.Ticket)
+
+    def test_wrong_url(self):
+        """
+        Checks that GET Ticket return correct status code if given a
+        wrong ticket (non existing)
+        """
+        print("(" + self.test_wrong_url.__name__ + ")", self.test_wrong_url.__doc__)
+        resp = self.client.get(self.url_wrong)
+        self.assertEqual(resp.status_code, 404)
+
+    def test_get_ticket(self):
+        """
+        Checks that GET Ticket returns correct response with a correct ticket
+        """
+
+        print("(" + self.test_get_ticket.__name__ + ")", self.test_get_ticket.__doc__)
+        with resources.app.test_client() as client:
+            resp = client.get(self.url1)
+            self.assertEqual(resp.status_code, 200)
+            data = json.loads(resp.data.decode("utf-8"))
+
+            self.assertIn("ticket_id", data)
+            self.assertIn("firstName", data)
+            self.assertIn("familyName", data)
+            self.assertIn("age", data)
+            self.assertIn("gender", data)
+            self.assertIn("seat", data)
+            self.assertIn("reservation_id", data)
+            self.assertIn("@namespaces", data)
+            self.assertIn("@controls", data)
+
+            self.assertIn("flight-booking-system", data["@namespaces"])
+            self.assertIn("name", data["@namespaces"]["flight-booking-system"])
+            self.assertEqual(data["@namespaces"]["flight-booking-system"]["name"],
+                             LINK_RELATIONS_URL)
+
+            self.assertEqual(data["ticket_id"], self.ticket1["ticket_id"])
+            self.assertEqual(data["firstName"], self.ticket1["firstName"])
+            self.assertEqual(data["familyName"], self.ticket1["familyName"])
+            self.assertEqual(data["age"], self.ticket1["age"])
+            self.assertEqual(data["gender"], self.ticket1["gender"])
+            self.assertEqual(data["seat"], self.ticket1["seat"])
+            self.assertEqual(data["reservation_id"], self.ticket1["reservation_id"])
+
+            self.assertIn("self", data["@controls"])
+            self.assertIn("href", data["@controls"]["self"])
+            self.assertEqual(data["@controls"]["self"]["href"],
+                             resources.api.url_for(resources.Ticket, ticket_id=self.ticket_id))
+
+            self.assertIn("profile", data["@controls"])
+            self.assertIn("href", data["@controls"]["profile"])
+            self.assertEqual(data["@controls"]["profile"]["href"], FLIGHT_BOOKING_SYSTEM_TICKET_PROFILE)
+
+            self.assertIn("edit", data["@controls"])
+            self.assertIn("title", data["@controls"]["edit"])
+            self.assertIn("href", data["@controls"]["edit"])
+            self.assertIn("encoding", data["@controls"]["edit"])
+            self.assertIn("method", data["@controls"]["edit"])
+            self.assertIn("schemaUrl", data["@controls"]["edit"])
+            self.assertEqual(data["@controls"]["edit"]["title"], "Modify ticket")
+            self.assertEqual(data["@controls"]["edit"]["href"],
+                             resources.api.url_for(resources.Ticket, ticket_id=self.ticket_id))
+            self.assertEqual(data["@controls"]["edit"]["encoding"], JSON)
+            self.assertEqual(data["@controls"]["edit"]["method"].lower(), "put")
+            self.assertEqual(data["@controls"]["edit"]["schemaUrl"], TICKET_SCHEMA_URL)
+
+            self.assertIn("flight-booking-system:delete", data["@controls"])
+            self.assertIn("title", data["@controls"]["flight-booking-system:delete"])
+            self.assertIn("href", data["@controls"]["flight-booking-system:delete"])
+            self.assertIn("method", data["@controls"]["flight-booking-system:delete"])
+            self.assertIn("encoding", data["@controls"]["flight-booking-system:delete"])
+            self.assertEqual(data["@controls"]["flight-booking-system:delete"]["title"], "Delete ticket")
+            self.assertEqual(data["@controls"]["flight-booking-system:delete"]["href"],
+                             resources.api.url_for(resources.Ticket, ticket_id=self.ticket_id))
+            self.assertEqual(data["@controls"]["flight-booking-system:delete"]["method"].lower(), "delete")
+            self.assertEqual(data["@controls"]["flight-booking-system:delete"]["encoding"], JSON)
+
+            self.assertIn("flight-booking-system:reservation-tickets", data["@controls"])
+            self.assertIn("title", data["@controls"]["flight-booking-system:reservation-tickets"])
+            self.assertIn("href", data["@controls"]["flight-booking-system:reservation-tickets"])
+            self.assertIn("encoding", data["@controls"]["flight-booking-system:reservation-tickets"])
+            self.assertIn("method", data["@controls"]["flight-booking-system:reservation-tickets"])
+            self.assertEqual(data["@controls"]["flight-booking-system:reservation-tickets"]["title"], "Tickets of this reservation")
+            self.assertEqual(data["@controls"]["flight-booking-system:reservation-tickets"]["href"], resources.api.url_for(resources.ReservationTickets,
+                                           reservation_id=self.ticket1["reservation_id"]))
+            self.assertEqual(data["@controls"]["flight-booking-system:reservation-tickets"]["encoding"], JSON)
+
+            self.assertIn("collection", data["@controls"])
+            self.assertIn("href", data["@controls"]["collection"])
+            self.assertIn("method", data["@controls"]["collection"])
+            self.assertEqual(data["@controls"]["collection"]["href"].lower(), resources.api.url_for(resources.Tickets))
+            self.assertEqual(data["@controls"]["collection"]["method"].lower(), "get")
+
+
+    def test_get_ticket_mimetype(self):
+        """
+        Checks that GET TICKET return correct status code and data format
+        """
+        print("(" + self.test_get_ticket_mimetype.__name__ + ")", self.test_get_ticket_mimetype.__doc__)
+
+        # Check that I receive status code 200
+        resp = self.client.get(self.url1)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.headers.get("Content-Type", None),
+                         "{};{}".format(MASONJSON, FLIGHT_BOOKING_SYSTEM_TICKET_PROFILE))
+
+
+    def test_get_nonexisting_ticket(self):
+        """
+        Checks that GET Ticket returns correct status and data
+        with a nonexisting user id
+        """
+        print("(" + self.test_get_nonexisting_ticket.__name__ + ")", self.test_get_nonexisting_ticket.__doc__)
+
+        # Check that we have 404 not found
+        resp = self.client.get(self.url_wrong)
+        self.assertEqual(resp.status_code, 404)
+        err_data = json.loads(resp.data.decode("utf-8"))
+
+        self.assertIn("@error", err_data)
+        self.assertIn("resource_url", err_data)
+
+        error = err_data["@error"]
+        self.assertIn("@message", error)
+        self.assertIn("@messages", error)
+
+        self.assertEqual(err_data["resource_url"],
+                         resources.api.url_for(resources.Ticket, ticket_id=self.ticket_id_wrong, _external=False))
+
+    def test_modify_ticket(self):
+        """
+        Checks that PUT Ticket modifies the user correctly in the system
+        and returns correct response
+        """
+        print("(" + self.test_modify_ticket.__name__ + ")", self.test_modify_ticket.__doc__)
+        # Send PUT request
+        resp = self.client.put(self.url1,
+                               data=json.dumps(self.modified_ticket1_req),
+                               headers={"Content-Type": JSON})
+
+        self.assertEqual(resp.status_code, 204)
+
+        # Check that the message has been modified
+        resp2 = self.client.get(self.url1)
+        self.assertEqual(resp2.status_code, 200)
+        data = json.loads(resp2.data.decode("utf-8"))
+        # Check the information of the ticket
+        self.assertEqual(data["firstName"], self.modified_ticket1_req["firstName"])
+        self.assertEqual(data["familyName"], self.modified_ticket1_req["familyName"])
+        self.assertEqual(data["age"], self.modified_ticket1_req["age"])
+        self.assertEqual(data["gender"], self.modified_ticket1_req["gender"])
+
+
+    def test_modify_nonexisting_ticket(self):
+        """
+            Checks that PUT Ticket with a nonexisting ticket id
+            returns correct response code
+        """
+        print("(" + self.test_modify_nonexisting_ticket.__name__ + ")",
+              self.test_modify_nonexisting_ticket.__doc__)
+
+        # Send PUT request
+        resp = self.client.put(self.url_wrong,
+                               data=json.dumps(self.modified_ticket1_req),
+                               headers={"Content-Type": JSON})
+
+        self.assertEqual(resp.status_code, 404)
+
+    def test_delete_ticket(self):
+        """
+            Checks that DELETE Ticket with a correct ticket id
+            returns correct response code and deletes ticket in the system
+        """
+        print("(" + self.test_delete_ticket.__name__ + ")", self.test_delete_ticket.__doc__)
+
+        # Send DELETE request
+        resp = self.client.delete(self.url1)
+        self.assertEqual(resp.status_code, 204)
+
+        # Checks that user does not exist in the system
+        resp2 = self.client.get(self.url1)
+        self.assertEqual(resp2.status_code, 404)
+
+    def test_delete_nonexisting_ticket(self):
+        """
+            Checks that DELETE Ticket with a nonexisting ticket id
+            returns correct response code
+        """
+        print("(" + self.test_delete_nonexisting_ticket.__name__ + ")", self.test_delete_nonexisting_ticket.__doc__)
+
+        # Send DELETE request
+        resp = self.client.delete(self.url_wrong)
+        self.assertEqual(resp.status_code, 404)
+
+    def test_modify_ticket_wrong_type(self):
+        """
+        Checks PUT Ticket returns correct status code with wrong Content-Type
+        """
+        print("(" + self.test_modify_ticket_wrong_type.__name__ + ")", self.test_modify_ticket_wrong_type.__doc__)
+        resp = self.client.put(self.url1,
+                               data=json.dumps(self.modified_ticket1_req),
+                               headers={"Content-Type": "text/html"})
+        self.assertEqual(resp.status_code, 415)
+
+class TicketsTestCase(ResourcesAPITestCase):
+
+    new_ticket = {
+        "firstName": "Jules",
+        "familyName": "Larue",
+        "age": 20,
+        "gender": "male",
+        "reservation_id": 11,
+    }
+
+
+    def setUp(self):
+        super(TicketsTestCase, self).setUp()
+        self.url = resources.api.url_for(resources.Tickets, _external=False)
+
+    def test_url(self):
+        """
+        Checks that the URL points to the right resource
+        """
+        print("(" + self.test_url.__name__ + ")", self.test_url.__doc__)
+        url = "/flight-booking-system/api/tickets"
+        with resources.app.test_request_context(url):
+            rule = flask.request.url_rule
+            view_point = resources.app.view_functions['tickets'].view_class
+            self.assertEqual(view_point, resources.Tickets)
+
+    def test_add_ticket(self):
+        """
+        Checks that POST Ticket returns correct status code and adds the ticket to the system
+        """
+        print("(" + self.test_add_ticket.__name__ + ")", self.test_add_ticket.__doc__)
+
+        # Make POST request
+        resp = self.client.post(resources.api.url_for(resources.Tickets),
+                                headers={"Content-Type": JSON},
+                                data=json.dumps(self.new_ticket))
+
+        self.assertEqual(resp.status_code, 201)
+        self.assertIn("Location", resp.headers)
+        url = resp.headers["Location"]
+        resp2 = self.client.get(url)
+        self.assertEqual(resp2.status_code, 200)
+
+    def test_add_ticket_wrong_type(self):
+        """
+        Checks that POST Ticket with a wrong Content-Type returns correct status code
+        """
+        print("(" + self.test_add_ticket_wrong_type.__name__ + ")",
+              self.test_add_ticket_wrong_type.__doc__)
+        resp = self.client.post(resources.api.url_for(resources.Tickets),
+                                headers={"Content-Type": "text/html"},
+                                data=json.dumps(self.new_ticket))
+
+        self.assertEqual(resp.status_code, 415)
+
+
 class FlightTestCase(ResourcesAPITestCase):
     flight_id = 1111
     flight = {
@@ -1774,6 +2214,6 @@ class TemplateFlightsTestCase(ResourcesAPITestCase):
         resp2 = self.client.get(url)
         self.assertEqual(resp2.status_code, 200)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     print("Start running tests")
     unittest.main()
