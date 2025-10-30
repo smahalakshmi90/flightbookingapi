@@ -7,5 +7,5 @@ application = DispatcherMiddleware(flight_reservation, {
     '/flight-booking-system/admin': flight_reservation_admin
 })
 if __name__ == '__main__':
-    run_simple('localhost', 8000, application,
+    run_simple('0.0.0.0', 8000, application,
                use_reloader=True, use_debugger=True, use_evalex=True)
